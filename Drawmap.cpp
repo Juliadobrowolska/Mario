@@ -1,78 +1,65 @@
 #include <cmath>
-#include <algorithm>
 #include <SFML/Graphics.hpp>
 
 #include "Headers/Global.hpp"
-#include "Headers/DrawMap.hpp"
 #include "Headers/MapManager.hpp"
 
-void draw_map(unsigned i_view_x, sf::RenderWindow& i_window, const MapManager& i_map_manager)
+void MapManager::draw_map(const bool i_draw_background, const bool i_draw_foreground, const unsigned int i_view_x, sf::RenderWindow& i_window)
 {
-	// OPTYMALIZACJA: Rysuje tylko to, co aktualnie widać na ekranie
-	unsigned short map_start = floor(i_view_x / static_cast<float>(CELL_SIZE));
-	unsigned short map_end = ceil((i_view_x + SCREEN_WIDTH) / static_cast<float>(CELL_SIZE));
+    (void)i_draw_background;
+    (void)i_draw_foreground;
 
-	sf::Sprite cell_sprite(i_map_manager.get_tex_floor1());
+    int map_start = static_cast<int>(std::floor(i_view_x / static_cast<float>(CELL_SIZE)));
+    int map_end = static_cast<int>(std::ceil((i_view_x + SCREEN_WIDTH) / static_cast<float>(CELL_SIZE)));
 
-	// kolumny (a) i pełną wysokość wierszy (b)
-	for (unsigned short a = map_start; a < map_end; a++)
-	{
-		for (unsigned short b = 0; b < 16; b++) // 16 to sztywna wysokość  segmentu
-		{
-			// Zabezpieczenie przed wyjściem poza wygenerowany świat
-			if (a >= i_map_manager.get_map_width() / CELL_SIZE) continue;
+    if (map_start < 0) map_start = 0;
 
-			// Pobieranie kafelek z managera mapy
-			Cell current_cell = i_map_manager.get_cell_at(a, b);
+    sf::Sprite cell_sprite(tex_floor1);
+    const sf::IntRect tile_rect(sf::Vector2i{0, 0}, sf::Vector2i{CELL_SIZE, CELL_SIZE});
+    cell_sprite.setTextureRect(tile_rect);
 
-			if (Cell::Empty == current_cell) continue;
+    for (int a = map_start; a < map_end; a++)
+    {
+        if (a >= static_cast<int>(get_map_width() / CELL_SIZE)) break;
 
-			cell_sprite.setPosition(sf::Vector2f(CELL_SIZE * a, CELL_SIZE * b));
+        for (unsigned short b = 0; b < SCREEN_HEIGHT / CELL_SIZE; b++)
+        {
+            Cell current_cell = get_cell_at(static_cast<unsigned int>(a), b);
+            if (Cell::Empty == current_cell) continue;
 
-			// Przypisywanie odpowiednich tekstur z managera na podstawie typu kafelka
-			if (Cell::Floor1 == current_cell)
-			{
-				cell_sprite.setTexture(i_map_manager.get_tex_floor1());
-			}
-			else if (Cell::Floor2 == current_cell)
-			{
-				cell_sprite.setTexture(i_map_manager.get_tex_floor2());
-			}
-			else if (Cell::Floor3 == current_cell)
-			{
-				cell_sprite.setTexture(i_map_manager.get_tex_floor3());
-			}
-			else if (Cell::Platform == current_cell)
-			{
-				cell_sprite.setTexture(i_map_manager.get_tex_platform());
-			}
-			else if (Cell::MailBlock == current_cell)
-			{
-				// Pobieranie aktualnej klatki mrugającego maila
-				cell_sprite.setTexture(i_map_manager.get_current_mail_texture());
-			}
-			else if (Cell::ActivatedMailBlock == current_cell)
-			{
-				cell_sprite.setTexture(i_map_manager.get_tex_activated_mail());
-			}
+            cell_sprite.setPosition(sf::Vector2f(static_cast<float>(CELL_SIZE * a - i_view_x), static_cast<float>(CELL_SIZE * b)));
+            cell_sprite.setTextureRect(tile_rect);
 
-			i_window.draw(cell_sprite);
-		}
-	}
+            if (Cell::Floor1 == current_cell)
+            {
+                cell_sprite.setTexture(tex_floor1);
+            }
+            else if (Cell::Floor2 == current_cell)
+            {
+                cell_sprite.setTexture(tex_floor2);
+            }
+            else if (Cell::Brick == current_cell)
+            {
+                cell_sprite.setTexture(tex_brick);
+            }
+            else if (Cell::Platform == current_cell)
+            {
+                cell_sprite.setTexture(tex_platform);
+            }
+            else if (Cell::MailBlock == current_cell)
+            {
+                cell_sprite.setTexture(tex_mail_block);
+            }
+            else if (Cell::ActivatedMailBlock == current_cell)
+            {
+                cell_sprite.setTexture(tex_activated_mail);
+            }
+            else
+            {
+                cell_sprite.setTexture(tex_floor1);
+            }
 
-	// RYSOWANIE PUNKTÓW ECTS I CZĄSTECZEK (Pobieranie pętlami z managera)
-	for (const Object& ects_point : i_map_manager.get_question_block_coins())
-	{
-		cell_sprite.setPosition(sf::Vector2f(ects_point.x, ects_point.y));
-		cell_sprite.setTexture(i_map_manager.get_ects_texture(ects_point.current_anim_frame));
-		i_window.draw(cell_sprite);
-	}
-
-	for (const Object& brick_particle : i_map_manager.get_brick_particles())
-	{
-		cell_sprite.setPosition(sf::Vector2f(brick_particle.x, brick_particle.y));
-		cell_sprite.setTexture(i_map_manager.get_tex_floor1());
-		cell_sprite.setTextureRect(sf::IntRect(sf::Vector2i{0, 0}, sf::Vector2i{CELL_SIZE / 4, CELL_SIZE / 4}));
-		i_window.draw(cell_sprite);
-	}
+            i_window.draw(cell_sprite);
+        }
+    }
 }

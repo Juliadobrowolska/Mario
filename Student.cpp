@@ -1,312 +1,298 @@
+#include <algorithm>
+#include <cmath>
+#include <SFML/Graphics.hpp>
 #include "Headers/Global.hpp"
-#include "Headers/Animation.hpp"
 #include "Headers/MapManager.hpp"
-#include "Headers/EnergyDrink.hpp"
+#include "Headers/MapCollision.hpp"
 #include "Headers/Student.hpp"
 
-#include <cmath>
-#include <algorithm>
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
+constexpr float STUDENT_FRICTION = 0.20f;
 
-// Konstruktor klasy Student - ustawia domyślne statystyki i stan postaci na starcie gry
 Student::Student() :
-    can_jump(0),          // Na starcie nie można skoczyć (aż dotkniemy ziemi)
-    dead(0),              // Student zaczyna grę żywy
-    flipped(0),           // Patrzy w prawo (brak odbicia lustrzanego tekstury)
-    on_ground(0),         // Zaczyna w powietrzu, zanim opadnie na platformę
-    crouching(0),         // Nie kuca
-    death_timer(0),       // Reset licznika czasu śmierci
-    turbo_student_timer(0), // Reset czasu bycia turbo studentem (speed-boosta)
-    immunity_timer(0),      // Reset licznika nietykalności po oberwaniu
-    powerup_state(0),     // Stan początkowy: brak ulepszeń (czysty student)
-    x(100),               // Startujemy kawałek od lewej krawędzi screena
-    y(100),               // Startujemy w powietrzu, żeby sprawdzić spadanie
-    enemy_bounce_speed(0),// Brak siły odbicia od wroga
-    horizontal_speed(0),  // Postać stoi w miejscu (brak ruchu w poziomie)
-    vertical_speed(0),    // Postać nie spada ani nie leci w górę
-    sprite(texture)
+    is_dead(false),
+    crouching(false),
+    flipped(false),
+    on_ground(false),
+    can_jump(true),
+    enemy_bounce_speed(0.0f),
+    horizontal_speed(0.0f),
+    vertical_speed(0.0f),
+    x(0.0f),
+    y(0.0f),
+    jump_timer(0),
+    powerup_state(0),
+    death_timer(0),
+    turbo_student_timer(0),
+    immunity_timer(0),
+    walk_frame_counter(0),
+    game_over_text(game_over_font, "", 30),
+    sprite(tex_idle)
 {
+}
+
+bool Student::load_textures()
+{
+    std::vector<std::string> right_runs = {"Resources/run1.png", "Resources/run2.png", "Resources/run3.png"};
+    tex_normal_walk.clear();
+    for (const auto& path : right_runs)
+    {
+        sf::Texture tex;
+        if (!tex.loadFromFile(path)) return false;
+        tex_normal_walk.push_back(tex);
+    }
+
+    std::vector<std::string> left_runs = {"Resources/left1.png", "Resources/left2.png"};
+    tex_big_walk.clear();
+    for (const auto& path : left_runs)
+    {
+        sf::Texture tex;
+        if (!tex.loadFromFile(path)) return false;
+        tex_big_walk.push_back(tex);
+    }
+
+    if (!tex_jump_up.loadFromFile("Resources/jump1.png")) return false;
+    if (!tex_jump_down.loadFromFile("Resources/jump2.png")) return false;
+    if (!tex_death.loadFromFile("Resources/gameover.png")) return false;
+    if (!tex_idle.loadFromFile("Resources/juststudent.png")) return false;
+
+    if (!game_over_font.openFromFile("C:/Windows/Fonts/arial.ttf"))
+    {
+        return false;
+    }
+
+    game_over_text.setFont(game_over_font);
+    game_over_text.setString("GAME OVER");
+    game_over_text.setCharacterSize(80);
+    game_over_text.setFillColor(sf::Color::Red);
+    game_over_text.setStyle(sf::Text::Bold);
+
+    sf::FloatRect textRect = game_over_text.getLocalBounds();
+    game_over_text.setOrigin(sf::Vector2f{textRect.position.x + textRect.size.x / 2.0f, textRect.position.y + textRect.size.y / 2.0f});
+
+    sprite.setTexture(tex_idle);
+    sprite.setOrigin(sf::Vector2f{CELL_SIZE / 2.0f, CELL_SIZE / 2.0f});
+
+    return true;
 }
 
 void Student::update(const unsigned i_view_x, MapManager& i_map_manager)
 {
-    // Aktualizacja tymczasowych energetyków 
-    for (EnergyDrink& energy_drink : energy_drinks)
+    if (is_dead)
     {
-        energy_drink.update();
+        return;
     }
 
-    if (0 == dead)
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
     {
-        bool moving = 0;
-
-        // Ustalamy maksymalną prędkość w zależności od energetyka
-        float current_max_speed = STUDENT_WALK_SPEED;
-        if (0 < powerup_state)
+        horizontal_speed = std::max(horizontal_speed - STUDENT_ACCELERATION, -STUDENT_WALK_SPEED);
+    }
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+    {
+        horizontal_speed = std::min(horizontal_speed + STUDENT_ACCELERATION, STUDENT_WALK_SPEED);
+    }
+    else
+    {
+        if (horizontal_speed > 0)
         {
-            current_max_speed = STUDENT_WALK_SPEED * 1.5f; // +50% prędkości po kofeinie
+            horizontal_speed = std::max(0.0f, horizontal_speed - STUDENT_FRICTION);
         }
-
-        // Obsługa ruchu w lewo/prawo za pomocą strzałek
-        if (0 == crouching)
+        else if (horizontal_speed < 0)
         {
-            if (0 == sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right) &&
-                1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
-            {
-                moving = 1;
-                horizontal_speed = std::max(horizontal_speed - STUDENT_ACCELERATION, -current_max_speed);
-            }
-
-            if (0 == sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) &&
-                1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
-            {
-                moving = 1;
-                horizontal_speed = std::min(STUDENT_ACCELERATION + horizontal_speed, current_max_speed);
-            }
+            horizontal_speed = std::min(0.0f, horizontal_speed + STUDENT_FRICTION);
         }
+    }
 
-        // Hamowanie (powrót do zera), gdy puszcisz klawisze
-        if (0 == moving)
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z))
+    {
+        if (on_ground)
         {
-            if (0 < horizontal_speed)
-            {
-                horizontal_speed = std::max<float>(0, horizontal_speed - STUDENT_ACCELERATION);
-            }
-            else if (0 > horizontal_speed)
-            {
-                horizontal_speed = std::min<float>(0, STUDENT_ACCELERATION + horizontal_speed);
-            }
+            vertical_speed = STUDENT_JUMP_SPEED;
+            on_ground = false;
         }
+    }
 
-        // --- RUCH I FIZYKA KOLIZJI W POZIOMIE (OŚ X) ---
-        x += horizontal_speed;
+    vertical_speed = std::min(vertical_speed + GRAVITY, MAX_VERTICAL_SPEED);
 
-        // Wektor przechowujący typy klocków stałych (podłogi, regały, maile)
-        std::vector<Cell> solid_cells = { Cell::Floor1, Cell::Floor2, Cell::Floor3, Cell::MailBlock, Cell::ActivatedMailBlock };
-        
-        // Sprawdzanie kolizji bocznych
-        std::vector<unsigned char> x_collisions = i_map_manager.map_collision(solid_cells, get_hit_box());
-        
-        for (unsigned char collision_mask : x_collisions)
+    std::vector<Cell> solid_cells = {Cell::Floor1, Cell::Floor2, Cell::Brick, Cell::MailBlock, Cell::ActivatedMailBlock, Cell::Platform};
+
+    y += vertical_speed;
+    unsigned char y_collision = map_collision(x, y, solid_cells, i_map_manager);
+
+    if (y_collision > 0)
+    {
+        if (vertical_speed > 0)
         {
-            if (0 != collision_mask)
+            if ((y_collision & 4) || (y_collision & 8))
             {
-                // Jeśli nastąpiła kolizja podczas ruchu w prawo, cofnij i zatrzymaj postać
-                if (0 < horizontal_speed)
-                {
-                    x = CELL_SIZE * floor(x / CELL_SIZE);
-                }
-                // Jeśli nastąpiła kolizja podczas ruchu w lewo, cofnij i zatrzymaj postać
-                else if (0 > horizontal_speed)
-                {
-                    x = CELL_SIZE * ceil(x / CELL_SIZE);
-                }
-                horizontal_speed = 0;
-                break;
+                y = std::floor(y / CELL_SIZE) * CELL_SIZE;
+                vertical_speed = 0.0f;
+                on_ground = true;
             }
         }
-
-        // --- RUCH I FIZYKA KOLIZJI W PIONIE (OŚ Y) ---
-        // Obsługa grawitacji i skoku
-        if (1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) || 1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z))
+        else if (vertical_speed < 0)
         {
-            if (0 == vertical_speed && 1 == can_jump && 1 == on_ground)
+            if ((y_collision & 1) || (y_collision & 2))
             {
-                vertical_speed = STUDENT_JUMP_SPEED;
-                jump_timer = STUDENT_JUMP_TIMER;
-                can_jump = 0;
+                y = std::ceil(y / CELL_SIZE) * CELL_SIZE;
+                vertical_speed = 0.0f;
             }
-            else if (0 < jump_timer)
-            {
-                vertical_speed = STUDENT_JUMP_SPEED;
-                jump_timer--;
-            }
-            else
-            {
-                vertical_speed = std::min(GRAVITY + vertical_speed, MAX_VERTICAL_SPEED);
-            }
-        }
-        else
-        {
-            vertical_speed = std::min(GRAVITY + vertical_speed, MAX_VERTICAL_SPEED);
-            jump_timer = 0;
-            can_jump = 1;
-        }
-
-        y += vertical_speed;
-        on_ground = 0; // Resetujemy stan stania na ziemi przed testem kolizji pionowych
-
-        // Sprawdzanie kolizji pionowych (góra/dół)
-        std::vector<sf::Vector2i> collision_tiles;
-        std::vector<unsigned char> y_collisions = i_map_manager.map_collision(solid_cells, collision_tiles, get_hit_box());
-
-        for (size_t i = 0; i < y_collisions.size(); i++)
-        {
-            if (0 != y_collisions[i])
-            {
-                // Kolizja podczas spadania (lądujemy na ziemi)
-                if (0 < vertical_speed)
-                {
-                    y = CELL_SIZE * floor(y / CELL_SIZE);
-                    vertical_speed = 0;
-                    jump_timer = 0;
-                    on_ground = 1;
-                }
-                // Kolizja podczas lotu w górę (uderzenie głową w blok)
-                else if (0 > vertical_speed)
-                {
-                    y = CELL_SIZE * ceil(y / CELL_SIZE);
-                    vertical_speed = 0;
-
-                    // Interakcja z uderzonym blokiem środowiskowym (np. aktywacja maila)
-                    if (!collision_tiles.empty())
-                    {
-                        sf::Vector2i hit_tile = collision_tiles[0];
-                        Cell hit_cell_type = i_map_manager.get_cell_at(hit_tile.x, hit_tile.y);
-
-                        if (Cell::MailBlock == hit_cell_type)
-                        {
-                            i_map_manager.set_map_cell(hit_tile.x, hit_tile.y, Cell::ActivatedMailBlock);
-                            i_map_manager.add_question_block_coin(hit_tile.x * CELL_SIZE, hit_tile.y * CELL_SIZE);
-                        }
-                    }
-                }
-                break;
-            }
-        }
-
-        // --- OBRACANIE I ANIMOWANIE POSTACI ---
-        // Obracanie sprite'a w zależności od kierunku poruszania się
-        if (0 == horizontal_speed)
-        {
-            if (1 == moving)
-            {
-                flipped = 1 - flipped;
-            }
-        }
-        else if (0 < horizontal_speed)
-        {
-            flipped = 0;
-        }
-        else if (0 > horizontal_speed)
-        {
-            flipped = 1;
-        }
-
-        // Tymczasowe zbieranie energetyków
-        for (EnergyDrink& energy_drink : energy_drinks)
-        {
-            if (get_hit_box().findIntersection(energy_drink.get_hit_box()).has_value())
-            {
-                energy_drink.set_dead(true);
-
-                if (0 == powerup_state)
-                {
-                    powerup_state = 1;
-                    turbo_student_timer = STUDENT_TURBO_DURATION; // Aktywacja stanu turbo
-                }
-            }
-        }
-
-        if (0 < immunity_timer) // Odliczanie czasu nietykalności
-        {
-            immunity_timer--;
-        }
-
-        // Odliczanie czasu działania energetyka (turbo studenta)
-        if (0 < turbo_student_timer)
-        {
-            turbo_student_timer--;
-            if (0 == turbo_student_timer)
-            {
-                powerup_state = 0;
-            }
-        }
-
-        // Spadek w przepaść (śmierć)
-        if (y >= SCREEN_HEIGHT)
-        {
-            die(1);
-        }
-
-        // Aktualizacja klatek w obiekcie klasy Animation w zależności od prędkości biegu
-        if (0 != horizontal_speed)
-        {
-            walk_animations[powerup_state].set_animation_speed(STUDENT_WALK_ANIMATION_SPEED * current_max_speed / std::abs(horizontal_speed));
-            walk_animations[powerup_state].update();
         }
     }
     else
     {
-        // Logika po śmierci
-        if (0 == death_timer)
-        {
-            vertical_speed = std::min(GRAVITY + vertical_speed, MAX_VERTICAL_SPEED);
-            y += vertical_speed;
-        }
-        else if (1 == death_timer)
-        {
-            vertical_speed = STUDENT_JUMP_SPEED;
-        }
-
-        death_timer = std::max(0, death_timer - 1);
+        on_ground = false;
     }
 
-    // Czyszczenie zebranych energetyków z pamięci
-    energy_drinks.erase(std::remove_if(energy_drinks.begin(), energy_drinks.end(), [](const EnergyDrink& i_energy_drink)
+    x += horizontal_speed;
+
+    if (x < i_view_x)
     {
-        return i_energy_drink.get_dead();
-    }), energy_drinks.end());
+        x = static_cast<float>(i_view_x);
+        horizontal_speed = 0.0f;
+    }
+
+    unsigned char x_collision = map_collision(x, y, solid_cells, i_map_manager);
+
+    if (x_collision > 0)
+    {
+        if (horizontal_speed > 0)
+        {
+            if ((x_collision & 2) || (x_collision & 8))
+            {
+                x = std::floor(x / CELL_SIZE) * CELL_SIZE;
+                horizontal_speed = 0.0f;
+            }
+        }
+        else if (horizontal_speed < 0)
+        {
+            if ((x_collision & 1) || (x_collision & 4))
+            {
+                x = std::ceil(x / CELL_SIZE) * CELL_SIZE;
+                horizontal_speed = 0.0f;
+            }
+        }
+    }
+
+    if (y > SCREEN_HEIGHT)
+    {
+        is_dead = true;
+        return;
+    }
+
+    if (!on_ground)
+    {
+        if (vertical_speed < -1.0f)
+        {
+            sprite.setTexture(tex_jump_up);
+        }
+        else
+        {
+            sprite.setTexture(tex_jump_down);
+        }
+    }
+    else if (0.0f == horizontal_speed)
+    {
+        sprite.setTexture(tex_idle);
+    }
+    else
+    {
+        int animation_delay = 100;
+        if (std::abs(horizontal_speed) > 0)
+        {
+            animation_delay = static_cast<int>(100.0f * (STUDENT_WALK_SPEED / std::abs(horizontal_speed)));
+        }
+
+        if (animation_clock.getElapsedTime().asMilliseconds() > animation_delay)
+        {
+            if (horizontal_speed < 0)
+            {
+                walk_frame_counter = (walk_frame_counter + 1) % tex_big_walk.size();
+                sprite.setTexture(tex_big_walk[walk_frame_counter]);
+            }
+            else
+            {
+                walk_frame_counter = (walk_frame_counter + 1) % tex_normal_walk.size();
+                sprite.setTexture(tex_normal_walk[walk_frame_counter]);
+            }
+            animation_clock.restart();
+        }
+    }
+
+    if (immunity_timer > 0)
+    {
+        --immunity_timer;
+    }
 }
 
-sf::FloatRect Student::get_hit_box() const
+void Student::draw(sf::RenderWindow& i_window)
 {
-    return sf::FloatRect(sf::Vector2f{x, y}, sf::Vector2f{CELL_SIZE, CELL_SIZE});
+    if (is_dead)
+    {
+        sprite.setTexture(tex_death);
+        i_window.draw(sprite);
+
+        sf::Vector2f window_center = i_window.getView().getCenter();
+        game_over_text.setPosition(window_center);
+        i_window.draw(game_over_text);
+        return;
+    }
+
+    if (immunity_timer > 0 && (immunity_timer / 4) % 2 == 0)
+    {
+        return;
+    }
+
+    sprite.setPosition(sf::Vector2f{x + CELL_SIZE / 2.0f, y + CELL_SIZE / 2.0f});
+    i_window.draw(sprite);
 }
 
 void Student::set_position(const float i_x, const float i_y)
 {
     x = i_x;
     y = i_y;
+    vertical_speed = 0.0f;
+    horizontal_speed = 0.0f;
+}
+ 
+float Student::get_vertical_speed() const
+{
+    return vertical_speed;
 }
 
-void Student::draw(sf::RenderWindow& i_window)
+float Student::get_x() const
 {
-    // Efekt migania: jeśli ma nietykalność, ukrywamy sprite co kilka klatek
-    if (immunity_timer > 0 && (immunity_timer / 4) % 2 == 0)
-    {
-        return;
-    }
+    return x;
+}
 
-    // Przypisanie pozycji oraz kierunku obrotu (flipped) do właściwej instancji klasy Animation
-    walk_animations[powerup_state].set_position(x, y);
-    walk_animations[powerup_state].set_flipped(flipped);
-    
-    // Klasa Animation zajmuje się teraz bezpośrednim renderowaniem aktualnej klatki Studenta
-    walk_animations[powerup_state].draw(i_window);
+sf::FloatRect Student::get_hit_box() const
+{
+    return sf::FloatRect(sf::Vector2f{x, y}, sf::Vector2f{static_cast<float>(CELL_SIZE), static_cast<float>(CELL_SIZE)});
+}
+
+void Student::set_vertical_speed(const float i_value)
+{
+    vertical_speed = i_value;
 }
 
 void Student::die(const bool i_instant_death)
 {
-    if (1 == i_instant_death)
-    {
-        dead = 1;
-        death_timer = STUDENT_DEATH_DURATION;
-    }
-    // Obsługa obrażeń od wrogów
-    else if (0 == dead && 0 == immunity_timer) // Można zranić tylko przy braku nietykalności
-    {
-        if (0 < powerup_state)
-        {
-            powerup_state = 0;
-            turbo_student_timer = 0; 
-            immunity_timer = STUDENT_IMMUNITY_DURATION; // Uruchomienie nietykalności po utracie turbo
-        }
-        else
-        {
-            dead = 1;
-            death_timer = STUDENT_DEATH_DURATION;
-        }
-    }
+    (void)i_instant_death;
+    is_dead = true;
+}
+
+void Student::reset()
+{
+    is_dead = false;
+    x = 0.0f;
+    y = 0.0f;
+    horizontal_speed = 0.0f;
+    vertical_speed = 0.0f;
+    on_ground = false;
+    immunity_timer = 0;
+}
+
+void Student::draw_energy_drinks(const unsigned i_view_x, sf::RenderWindow& i_window)
+{
+    (void)i_view_x;
+    (void)i_window;
 }

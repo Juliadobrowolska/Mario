@@ -48,7 +48,7 @@ enum class Cell : unsigned char
     Empty = 0,
     Floor1, 
     Floor2,
-    Floor3, 
+    Brick,       
     Platform, 
     MailBlock, 
     ActivatedMailBlock,

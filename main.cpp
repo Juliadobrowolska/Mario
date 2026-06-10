@@ -6,24 +6,24 @@
 
 int main()
 {
-    // Tworzenie okna gry o odpowiednich wymiarach z uwzględnieniem skalowania SCREEN_RESIZE
-    sf::RenderWindow window(sf::VideoMode(sf::Vector2u{static_cast<unsigned>(SCREEN_WIDTH * SCREEN_RESIZE), static_cast<unsigned>(SCREEN_HEIGHT * SCREEN_RESIZE)}), "Super mario game");
+    // Utworzenie okna gry z uwzględnieniem skalowania SCREEN_RESIZE
+    sf::RenderWindow window(sf::VideoMode({static_cast<unsigned int>(SCREEN_WIDTH * SCREEN_RESIZE), static_cast<unsigned int>(SCREEN_HEIGHT * SCREEN_RESIZE)}), "Super Mario Game");
     window.setFramerateLimit(60);
 
     MapManager map_manager;
     
-    // Kluczowa inicjalizacja - ładujemy grafiki i segmenty map z poziomu Resources
+    // Inicjalizacja zasobów i ładowanie tekstur z folderu Resources
     if (!map_manager.initialize())
     {
-        std::cout << "Blad krytyczny: Nie udalo sie zaladowac grafik z folderu Resources!" << std::endl;
+        std::cout << "Critical error: Failed to load assets from Resources directory!" << std::endl;
         return -1;
     }
 
     Student student;
-    // Ustawiamy pozycję startową Studenta w powietrzu, żeby fizyka sama go opuściła na kafelki mapy
+    // Ustawienie pozycji startowej obiektu Student w powietrzu
     student.set_position(100.0f, 100.0f);
 
-    unsigned view_x = 0;
+    unsigned int camera_x = 0;
 
     // Główna pętla gry
     while (window.isOpen())
@@ -34,22 +34,32 @@ int main()
                 window.close();
         }
 
-        // Aktualizacja managera mapy z przekazaniem aktualnej pozycji kamery
-        map_manager.update(view_x);
+        // Aktualizacja managera mapy na podstawie pozycji kamery
+        map_manager.update(camera_x);
         
-        // Aktualizacja fizyki i ruchu studenta
-        student.update(view_x, map_manager);
+        // Aktualizacja fizyki oraz pozycji obiektu Student
+        student.update(camera_x, map_manager);
 
-        // Czyszczenie ekranu (tło)
+        // Aktualizacja pozycji kamery w celu wyśrodkowania widoku na graczu
+        if (student.get_x() > SCREEN_WIDTH / 2.0f)
+        {
+            camera_x = static_cast<unsigned int>(student.get_x() - SCREEN_WIDTH / 2.0f);
+        }
+        else
+        {
+            camera_x = 0;
+        }
+
+        // Czyszczenie bufora ekranu
         window.clear(sf::Color::Black);
         
-        // Rysowanie mapy - przekazujemy okno SFML i pozycję kamery
-        map_manager.draw_map(false, false, view_x, window);
+        // Renderowanie kafelków mapy oraz obiektów zależnych od przesunięcia kamery
+        map_manager.draw_map(false, false, camera_x, window);
         
-        // Rysowanie studenta
+        // Renderowanie obiektu Student
         student.draw(window);
         
-        // Wyświetlenie wyrenderowanej klatki na ekranie
+        // Wyświetlenie wyrenderowanej klatki
         window.display();
     }
 
