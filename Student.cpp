@@ -224,11 +224,12 @@ void Student::update(const unsigned i_view_x, MapManager& i_map_manager)
     }
 }
 
-void Student::draw(sf::RenderWindow& i_window)
+void Student::draw(sf::RenderWindow& i_window, unsigned int i_camera_x)
 {
     if (is_dead)
     {
         sprite.setTexture(tex_death);
+        sprite.setPosition(sf::Vector2f{((x - i_camera_x) + CELL_SIZE / 2.0f) * SCREEN_RESIZE, (y + CELL_SIZE / 2.0f) * SCREEN_RESIZE});
         i_window.draw(sprite);
 
         sf::Vector2f window_center = i_window.getView().getCenter();
@@ -242,7 +243,8 @@ void Student::draw(sf::RenderWindow& i_window)
         return;
     }
 
-    sprite.setPosition(sf::Vector2f{x + CELL_SIZE / 2.0f, y + CELL_SIZE / 2.0f});
+    sprite.setScale(sf::Vector2f{SCREEN_RESIZE, SCREEN_RESIZE});
+    sprite.setPosition(sf::Vector2f{((x - i_camera_x) + CELL_SIZE / 2.0f) * SCREEN_RESIZE, (y + CELL_SIZE / 2.0f) * SCREEN_RESIZE});
     i_window.draw(sprite);
 }
 

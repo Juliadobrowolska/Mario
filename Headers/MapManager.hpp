@@ -1,15 +1,42 @@
-#ifndef MAPMANAGER_HPP
-#define MAPMANAGER_HPP
+#ifndef MAP_MANAGER_HPP
+#define MAP_MANAGER_HPP
 
-#include <vector>
-#include <string>
 #include <SFML/Graphics.hpp>
+#include <vector>
+#include <array>
+#include <string>
 #include "Global.hpp"
+
+enum class Cell : unsigned char
+{
+    Empty,
+    Floor1,
+    Floor2,
+    Brick,
+    MailBlock,
+    ActivatedMailBlock,
+    Platform
+};
 
 class MapManager
 {
+public:
+    MapManager();
+
+    bool initialize();
+    bool load_textures();
+    bool load_map_from_image(const std::string& i_path);
+    void update(unsigned int i_camera_x);
+    void draw_map(bool i_background, bool i_foreground, unsigned int i_camera_x, sf::RenderWindow& i_window);
+
+    unsigned int get_map_width() const;
+
 private:
-    Map current_map;
+    // Używamy std::vector zawierającego std::array o stałym rozmiarze pionowym 16 klocków
+    std::vector<std::array<Cell, 16>> current_map;
+
+    unsigned int animation_frame_counter;
+    sf::Clock animation_clock;
 
     sf::Texture tex_floor1;
     sf::Texture tex_floor2;
@@ -17,22 +44,7 @@ private:
     sf::Texture tex_platform;
     sf::Texture tex_mail_block;
     sf::Texture tex_activated_mail;
-
-    sf::Clock animation_clock;
-    unsigned int animation_frame;
-
-public:
-    MapManager();
-
-    bool initialize();
-    bool load_textures();
-    bool load_map_from_image(const std::string& i_path);
-    void load_level(const std::string& i_level_path);
-    void update(const unsigned int i_view_x);
-    void draw_map(bool draw_background, bool draw_foreground, const unsigned int i_view_x, sf::RenderWindow& i_window);
-
-    unsigned int get_map_width() const;
-    Cell get_cell_at(unsigned int i_x, unsigned int i_y) const;
+    sf::Texture tex_ects;
 };
 
 #endif
