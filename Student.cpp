@@ -1,300 +1,240 @@
-#include <algorithm>
+#include <array>
+#include <chrono>
 #include <cmath>
+#include <algorithm>
 #include <SFML/Graphics.hpp>
+
+#include "Headers/Animation.hpp"
 #include "Headers/Global.hpp"
 #include "Headers/MapManager.hpp"
-#include "Headers/MapCollision.hpp"
 #include "Headers/Student.hpp"
 
-constexpr float STUDENT_FRICTION = 0.20f;
 
-Student::Student() :
-    is_dead(false),
-    crouching(false),
-    flipped(false),
-    on_ground(false),
-    can_jump(true),
-    enemy_bounce_speed(0.0f),
-    horizontal_speed(0.0f),
-    vertical_speed(0.0f),
-    x(0.0f),
-    y(0.0f),
-    jump_timer(0),
-    powerup_state(0),
-    death_timer(0),
-    turbo_student_timer(0),
-    immunity_timer(0),
-    walk_frame_counter(0),
-    game_over_text(game_over_font, "", 30),
-    sprite(tex_idle)
+void Student::die(const bool i_instant_death)
 {
-}
-
-bool Student::load_textures()
-{
-    std::vector<std::string> right_runs = {"Resources/run1.png", "Resources/run2.png", "Resources/run3.png"};
-    tex_normal_walk.clear();
-    for (const auto& path : right_runs)
-    {
-        sf::Texture tex;
-        if (!tex.loadFromFile(path)) return false;
-        tex_normal_walk.push_back(tex);
-    }
-
-    std::vector<std::string> left_runs = {"Resources/left1.png", "Resources/left2.png"};
-    tex_big_walk.clear();
-    for (const auto& path : left_runs)
-    {
-        sf::Texture tex;
-        if (!tex.loadFromFile(path)) return false;
-        tex_big_walk.push_back(tex);
-    }
-
-    if (!tex_jump_up.loadFromFile("Resources/jump1.png")) return false;
-    if (!tex_jump_down.loadFromFile("Resources/jump2.png")) return false;
-    if (!tex_death.loadFromFile("Resources/gameover.png")) return false;
-    if (!tex_idle.loadFromFile("Resources/juststudent.png")) return false;
-
-    if (!game_over_font.openFromFile("C:/Windows/Fonts/arial.ttf"))
-    {
-        return false;
-    }
-
-    game_over_text.setFont(game_over_font);
-    game_over_text.setString("GAME OVER");
-    game_over_text.setCharacterSize(80);
-    game_over_text.setFillColor(sf::Color::Red);
-    game_over_text.setStyle(sf::Text::Bold);
-
-    sf::FloatRect textRect = game_over_text.getLocalBounds();
-    game_over_text.setOrigin(sf::Vector2f{textRect.position.x + textRect.size.x / 2.0f, textRect.position.y + textRect.size.y / 2.0f});
-
-    sprite.setTexture(tex_idle);
-    sprite.setOrigin(sf::Vector2f{CELL_SIZE / 2.0f, CELL_SIZE / 2.0f});
-
-    return true;
+	if (true == i_instant_death)
+	{
+		dead = true;
+		texture.loadFromFile("Resources/Images/student_death.png");
+	}
+	// *Jeśli student ma power-up (jest odporny), to zamiast umierać, traci go i dostaje chwilę nietykalności*
+	else if (0 == growth_timer && 0 == invincible_timer)
+	{
+		if (false == is_older_student)
+		{
+			dead = true;
+			texture.loadFromFile("Resources/Images/student_death.png");
+		}
+		else
+		{
+			*is_older_student = false;* // *Utrata power-upa*
+			invincible_timer = STUDENT_IMMUNITY_DURATION;
+			
+			// *Wzrost się nie zmienia, więc nie musimy manipulować pozycją Y postaci!*
+			if (true == crouching) crouching = false;
+		}
+	}
 }
 
 void Student::update(const unsigned i_view_x, MapManager& i_map_manager)
 {
-    if (is_dead)
-    {
-        return;
-    }
+	if (0 != enemy_bounce_speed)
+	{
+		vertical_speed = enemy_bounce_speed;
+		enemy_bounce_speed = 0;
+	}
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
-    {
-        horizontal_speed = std::max(horizontal_speed - STUDENT_ACCELERATION, -STUDENT_WALK_SPEED);
-    }
-    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
-    {
-        horizontal_speed = std::min(horizontal_speed + STUDENT_ACCELERATION, STUDENT_WALK_SPEED);
-    }
-    else
-    {
-        if (horizontal_speed > 0)
-        {
-            horizontal_speed = std::max(0.0f, horizontal_speed - STUDENT_FRICTION);
-        }
-        else if (horizontal_speed < 0)
-        {
-            horizontal_speed = std::min(0.0f, horizontal_speed + STUDENT_FRICTION);
-        }
-    }
+	for (Index& index : indexes)
+	{
+		index.update(i_view_x, i_map_manager);
+	}
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z))
-    {
-        if (on_ground)
-        {
-            vertical_speed = STUDENT_JUMP_SPEED;
-            on_ground = false;
-        }
-    }
+	if (false == dead)
+	{
+		bool moving = false;
+		std::vector<unsigned char> collision;
+		std::vector<sf::Vector2i> cells;
+		sf::FloatRect hit_box = get_hit_box();
 
-    vertical_speed = std::min(vertical_speed + GRAVITY, MAX_VERTICAL_SPEED);
+		on_ground = false;
 
-    std::vector<Cell> solid_cells = {Cell::Floor1, Cell::Floor2, Cell::Brick, Cell::MailBlock, Cell::ActivatedMailBlock, Cell::Platform};
+		// *USTALANIE PRĘDKOŚCI: Jeśli student posiada indeks, jego maksymalna prędkość rośnie dwukrotnie*
+		*float current_max_speed = is_older_student ? (STUDENT_WALK_SPEED * 2.f) : STUDENT_WALK_SPEED;*
+		*float current_acceleration = is_older_student ? (STUDENT_ACCELERATION * 2.f) : STUDENT_ACCELERATION;*
 
-    y += vertical_speed;
-    unsigned char y_collision = map_collision(x, y, solid_cells, i_map_manager);
+		if (false == crouching)
+		{
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+			{
+				moving = true;
+				*horizontal_speed = std::max(horizontal_speed - current_acceleration, -current_max_speed);*
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+			{
+				moving = true;
+				*horizontal_speed = std::min(current_acceleration + horizontal_speed, current_max_speed);*
+			}
+		}
 
-    if (y_collision > 0)
-    {
-        if (vertical_speed > 0)
-        {
-            if ((y_collision & 4) || (y_collision & 8))
-            {
-                y = std::floor(y / CELL_SIZE) * CELL_SIZE;
-                vertical_speed = 0.0f;
-                on_ground = true;
-            }
-        }
-        else if (vertical_speed < 0)
-        {
-            if ((y_collision & 1) || (y_collision & 2))
-            {
-                y = std::ceil(y / CELL_SIZE) * CELL_SIZE;
-                vertical_speed = 0.0f;
-            }
-        }
-    }
-    else
-    {
-        on_ground = false;
-    }
+		if (false == moving)
+		{
+			if (0 < horizontal_speed)       *horizontal_speed = std::max<float>(0, horizontal_speed - current_acceleration);*
+			else if (0 > horizontal_speed)  *horizontal_speed = std::min<float>(0, current_acceleration + horizontal_speed);*
+		}
 
-    x += horizontal_speed;
+		// Kolizje poziome
+		hit_box.left += horizontal_speed;
+		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
 
-    if (x < i_view_x)
-    {
-        x = static_cast<float>(i_view_x);
-        horizontal_speed = 0.0f;
-    }
+		if (0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
+		{
+			moving = false;
+			if (0 < horizontal_speed)       x = CELL_SIZE * (ceil((horizontal_speed + x) / CELL_SIZE) - 1);
+			else if (0 > horizontal_speed)  x = CELL_SIZE * (1 + floor((horizontal_speed + x) / CELL_SIZE));
+			horizontal_speed = 0;
+		}
+		else
+		{
+			x += horizontal_speed;
+		}
 
-    unsigned char x_collision = map_collision(x, y, solid_cells, i_map_manager);
+		// Skoki Studenta
+		hit_box = get_hit_box();
+		hit_box.top++;
+		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
+		
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+		{
+			if (0 == vertical_speed && 0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
+			{
+				vertical_speed = STUDENT_JUMP_SPEED;
+				jump_timer = STUDENT_JUMP_TIMER;
+			}
+			else if (0 < jump_timer)
+			{
+				vertical_speed = STUDENT_JUMP_SPEED;
+				jump_timer--;
+			}
+		}
+		else
+		{
+			vertical_speed = std::min(GRAVITY + vertical_speed, MAX_VERTICAL_SPEED);
+			jump_timer = 0;
+		}
 
-    if (x_collision > 0)
-    {
-        if (horizontal_speed > 0)
-        {
-            if ((x_collision & 2) || (x_collision & 8))
-            {
-                x = std::floor(x / CELL_SIZE) * CELL_SIZE;
-                horizontal_speed = 0.0f;
-            }
-        }
-        else if (horizontal_speed < 0)
-        {
-            if ((x_collision & 1) || (x_collision & 4))
-            {
-                x = std::ceil(x / CELL_SIZE) * CELL_SIZE;
-                horizontal_speed = 0.0f;
-            }
-        }
-    }
+		// Kolizje pionowe
+		hit_box = get_hit_box();
+		hit_box.top += vertical_speed;
+		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
+		
+		if (0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
+		{
+			if (0 > vertical_speed)
+			{
+				// *Niszczenie klocków: teraz niszczymy je, jeśli mamy power-up (is_older_student), wzrost nie ma znaczenia*
+				*if (false == crouching && true == is_older_student)*
+				{
+					i_map_manager.map_collision({Cell::Brick}, cells, hit_box);
+					for (const sf::Vector2i& cell : cells)
+					{
+						i_map_manager.set_map_cell(cell.x, cell.y, Cell::Empty);
+						i_map_manager.add_brick_particles(CELL_SIZE * cell.x, CELL_SIZE * cell.y);
+					}
+				}
 
-    if (y > SCREEN_HEIGHT)
-    {
-        is_dead = true;
-        return;
-    }
+				i_map_manager.map_collision({Cell::MailBlock}, cells, hit_box);
+				for (const sf::Vector2i& cell : cells)
+				{
+					i_map_manager.set_map_cell(cell.x, cell.y, Cell::ActivatedMailBlock);
+					
+					if (rand() % 2 == 0)
+					{
+						indexes.push_back(Index(CELL_SIZE * cell.x, CELL_SIZE * cell.y));
+					}
+					else
+					{
+						i_map_manager.add_mail_block_ects(CELL_SIZE * cell.x, CELL_SIZE * cell.y);
+					}
+				}
+				y = CELL_SIZE * (1 + floor((vertical_speed + y) / CELL_SIZE));
+			}
+			else if (0 < vertical_speed)
+			{
+				y = CELL_SIZE * (ceil((vertical_speed + y) / CELL_SIZE) - 1);
+			}
+			jump_timer = 0;
+			vertical_speed = 0;
+		}
+		else
+		{
+			y += vertical_speed;
+		}
 
-    if (!on_ground)
-    {
-        if (vertical_speed < -1.0f)
-        {
-            sprite.setTexture(tex_jump_up);
-        }
-        else
-        {
-            sprite.setTexture(tex_jump_down);
-        }
-    }
-    else if (0.0f == horizontal_speed)
-    {
-        sprite.setTexture(tex_idle);
-    }
-    else
-    {
-        int animation_delay = 100;
-        if (std::abs(horizontal_speed) > 0)
-        {
-            animation_delay = static_cast<int>(100.0f * (STUDENT_WALK_SPEED / std::abs(horizontal_speed)));
-        }
+		if (0 < horizontal_speed)       flipped = false;
+		else if (0 > horizontal_speed)  flipped = true;
 
-        if (animation_clock.getElapsedTime().asMilliseconds() > animation_delay)
-        {
-            if (horizontal_speed < 0)
-            {
-                walk_frame_counter = (walk_frame_counter + 1) % tex_big_walk.size();
-                sprite.setTexture(tex_big_walk[walk_frame_counter]);
-            }
-            else
-            {
-                walk_frame_counter = (walk_frame_counter + 1) % tex_normal_walk.size();
-                sprite.setTexture(tex_normal_walk[walk_frame_counter]);
-            }
-            animation_clock.restart();
-        }
-    }
+		// Sprawdzenie podłoża
+		hit_box = get_hit_box();
+		hit_box.top++;
+		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
+		if (0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
+		{
+			on_ground = true;
+		}
 
-    if (immunity_timer > 0)
-    {
-        --immunity_timer;
-    }
-}
+		// Kolizja z Indeksem (Aktywacja turbo-prędkości)
+		for (Index& index : indexes)
+		{
+			if (get_hit_box().intersects(index.get_hit_box()))
+			{
+				index.set_dead(true);
+				if (false == is_older_student)
+				{
+					is_older_student = true;
+					*growth_timer = STUDENT_GROWTH_DURATION;* // *Uruchamia efekt "błyskania" przy aktywacji*
+				}
+			}
+		}
 
-void Student::draw(sf::RenderWindow& i_window, unsigned int i_camera_x)
-{
-    if (is_dead)
-    {
-        sprite.setTexture(tex_death);
-        sprite.setPosition(sf::Vector2f{((x - i_camera_x) + CELL_SIZE / 2.0f) * SCREEN_RESIZE, (y + CELL_SIZE / 2.0f) * SCREEN_RESIZE});
-        i_window.draw(sprite);
+		// Zbieranie ECTS
+		hit_box = get_hit_box();
+		i_map_manager.map_collision({Cell::Ects}, cells, hit_box);
+		for (const sf::Vector2i& cell : cells)
+		{
+			i_map_manager.set_map_cell(cell.x, cell.y, Cell::Empty);
+		}
 
-        sf::Vector2f window_center = i_window.getView().getCenter();
-        game_over_text.setPosition(window_center);
-        i_window.draw(game_over_text);
-        return;
-    }
+		if (0 < invincible_timer) invincible_timer--;
+		if (0 < growth_timer) growth_timer--;
 
-    if (immunity_timer > 0 && (immunity_timer / 4) % 2 == 0)
-    {
-        return;
-    }
+		if (y >= SCREEN_HEIGHT - get_hit_box().height) die(true);
 
-    sprite.setScale(sf::Vector2f{SCREEN_RESIZE, SCREEN_RESIZE});
-    sprite.setPosition(sf::Vector2f{((x - i_camera_x) + CELL_SIZE / 2.0f) * SCREEN_RESIZE, (y + CELL_SIZE / 2.0f) * SCREEN_RESIZE});
-    i_window.draw(sprite);
-}
+		// *Animacja dopasowuje swoją szybkość do faktycznej prędkości biegu Studenta!*
+		walk_animation.set_animation_speed(STUDENT_WALK_ANIMATION_SPEED * STUDENT_WALK_SPEED / abs(horizontal_speed));
+		walk_animation.update();
+	}
+	else
+	{
+		if (0 == death_timer)
+		{
+			vertical_speed = std::min(GRAVITY + vertical_speed, MAX_VERTICAL_SPEED);
+			y += vertical_speed;
+		}
+		else if (1 == death_timer)
+		{
+			vertical_speed = STUDENT_JUMP_SPEED;
+		}
+		death_timer = std::max(0, death_timer - 1);
+	}
 
-void Student::set_position(const float i_x, const float i_y)
-{
-    x = i_x;
-    y = i_y;
-    vertical_speed = 0.0f;
-    horizontal_speed = 0.0f;
-}
- 
-float Student::get_vertical_speed() const
-{
-    return vertical_speed;
-}
-
-float Student::get_x() const
-{
-    return x;
+	indexes.erase(remove_if(indexes.begin(), indexes.end(), [](const Index& i_index)
+	{
+		return true == i_index.get_dead();
+	}), indexes.end());
 }
 
 sf::FloatRect Student::get_hit_box() const
 {
-    return sf::FloatRect(sf::Vector2f{x, y}, sf::Vector2f{static_cast<float>(CELL_SIZE), static_cast<float>(CELL_SIZE)});
-}
-
-void Student::set_vertical_speed(const float i_value)
-{
-    vertical_speed = i_value;
-}
-
-void Student::die(const bool i_instant_death)
-{
-    (void)i_instant_death;
-    is_dead = true;
-}
-
-void Student::reset()
-{
-    is_dead = false;
-    x = 0.0f;
-    y = 0.0f;
-    horizontal_speed = 0.0f;
-    vertical_speed = 0.0f;
-    on_ground = false;
-    immunity_timer = 0;
-}
-
-void Student::draw_energy_drinks(const unsigned i_view_x, sf::RenderWindow& i_window)
-{
-    (void)i_view_x;
-    (void)i_window;
+	// *Hitbox zawsze ma stały rozmiar 1 kafelka, bo Student nie rośnie wzwyż!*
+	*return sf::FloatRect(x, y, CELL_SIZE, CELL_SIZE);*
 }
