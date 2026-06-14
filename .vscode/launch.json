@@ -1,15 +1,14 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
         {
-            "name": "(Windows) Launch",
+            "name": "Uruchom Grę",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/game.exe",
+            "program": "C:\\Mario\\game.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "C:\\Mario",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

@@ -70,7 +70,7 @@ int main()
 	menu_title.setFillColor(sf::Color::Yellow);
 	menu_title.setPosition(sf::Vector2f{20.0f, 20.0f});
 
-	sf::Text menu_options(font, "Nacisnij ENTER aby zaczac\n\nUzyj STRZALEK gora/dol by wybrac trudnosc:", 10);
+	sf::Text menu_options(font, "Press ENTER to start\n\nUse ARROW KEYS up/down to select difficulty:", 10);
 	menu_options.setFillColor(sf::Color::White);
 	menu_options.setPosition(sf::Vector2f{20.0f, 60.0f});
 
@@ -80,11 +80,11 @@ int main()
 	sf::Text hud_text(font, "", 9);
 	hud_text.setFillColor(sf::Color::White);
 
-	sf::Text pause_text(font, "PAUZA\n\nNacisnij P aby wznowic", 16);
+	sf::Text pause_text(font, "PAUZA\n\nPress P to resume", 16);
 	pause_text.setFillColor(sf::Color::White);
 	pause_text.setPosition(sf::Vector2f{80.0f, 90.0f});
 
-	sf::Text game_over_text(font, "GAME OVER\n\nNacisnij ENTER aby wrocic", 14);
+	sf::Text game_over_text(font, "GAME OVER\n\nPress ENTER to return", 14);
 	game_over_text.setFillColor(sf::Color::Red);
 	game_over_text.setPosition(sf::Vector2f{60.0f, 100.0f});
 
@@ -234,12 +234,12 @@ int main()
 
 			if (hard_mode)
 			{
-				difficulty_text.setString("TRYB: TRUDNY (Kampania Wrzesniowa)");
+				difficulty_text.setString("MODE: HARD");
 				difficulty_text.setFillColor(sf::Color::Red);
 			}
 			else
 			{
-				difficulty_text.setString("TRYB: NORMALNY (Pierwszy Termin)");
+				difficulty_text.setString("MODE: EASY");
 				difficulty_text.setFillColor(sf::Color::Green);
 			}
 

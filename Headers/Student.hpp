@@ -1,60 +1,44 @@
 #pragma once
-#include <vector>
-#include <queue>
-#include <utility>
-#include <memory>
 #include <SFML/Graphics.hpp>
-#include "Global.hpp"
-#include "MapManager.hpp"
+#include <vector>
+#include <memory>
+#include <queue>
+#include "Headers/MapManager.hpp"
+#include "Headers/EnergyDrink.hpp"
 
 class Enemy;
-class EnergyDrink;
 
 class Student
 {
 public:
-	Student();
+    Student();
+    void reset_stats();
+    void update(unsigned short map_width, MapManager& map_manager, std::vector<EnergyDrink>& energy_drinks, std::vector<std::shared_ptr<Enemy>>& enemies);
+    void draw(sf::RenderWindow& window, unsigned int view_x);
+    void die(bool time_out);
+    void collect_energy_drink();
+    
+    float get_x() const;
+    float get_y() const;
+    bool get_dead() const;
+    bool is_sugar_overdose() const;
+    unsigned int get_energy_drinks() const;
 
-	void reset_stats();
-	void update(unsigned short map_width, MapManager& map_manager, std::vector<EnergyDrink>& energy_drinks, std::vector<std::shared_ptr<Enemy>>& enemies);
-	void draw(sf::RenderWindow& window, unsigned int view_x);
-	
-	void collect_energy_drink();
-	void die(bool time_out);
-
-	// Getters
-	float get_x() const;
-	float get_y() const;
-	bool get_dead() const;
-	bool is_sugar_overdose() const;
-	unsigned int get_energy_drinks() const;
-	sf::FloatRect get_hitbox() const;
-
-	// Spawning queue mechanics
-	bool has_queued_enemy();
-	std::pair<unsigned char, sf::Vector2f> pop_queued_enemy();
+    bool has_queued_enemy();
+    std::pair<unsigned char, sf::Vector2f> pop_queued_enemy();
 
 private:
-	float x;
-	float y;
-	float vx;
-	float vy;
+    float x, y, vx, vy;
+    bool dead, sugar_overdose, is_big;
+    unsigned int energy_drinks_collected;
+    int jump_timer;
+    float animation_timer;
+    int current_frame;
 
-	bool dead;
-	bool sugar_overdose;
-	bool is_big;
+    sf::Texture texture_small, texture_big;
+    sf::Sprite sprite;
+    
+    std::queue<std::pair<unsigned char, sf::Vector2f>> enemy_queue;
 
-	unsigned int energy_drinks_collected;
-	unsigned char jump_timer;
-
-	// Animation controllers
-	float animation_timer;
-	unsigned char current_frame;
-
-	sf::Sprite sprite;
-	sf::Texture texture_small;
-	sf::Texture texture_big;
-
-	// Queue for enemies that might be dynamically spawned (e.g., from hitting blocks)
-	std::queue<std::pair<unsigned char, sf::Vector2f>> enemy_queue;
+    sf::FloatRect get_hitbox() const;
 };
