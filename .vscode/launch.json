@@ -5,14 +5,15 @@
             "name": "Uruchom Grę",
             "type": "cppdbg",
             "request": "launch",
-            "program": "C:\\Mario\\game.exe",
+            "program": "${workspaceFolder}\\game.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "C:\\Mario",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "C:\\msys64\\ucrt64\\bin\\gdb.exe",
+            "preLaunchTask": "Build Game",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

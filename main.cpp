@@ -39,11 +39,11 @@ int main()
 	}
 
 	sf::Texture texture_block1, texture_block2, texture_bookblock, texture_mailblock3, texture_mailblock0;
-	texture_block1.loadFromFile("Resources/block1.png");
-	texture_block2.loadFromFile("Resources/block2.png");
-	texture_bookblock.loadFromFile("Resources/bookblock.png");
-	texture_mailblock3.loadFromFile("Resources/mailblock3.png");
-	texture_mailblock0.loadFromFile("Resources/mailblock0.png");
+	if (!texture_block1.loadFromFile("Resources/block1.png")) {}
+	if (!texture_block2.loadFromFile("Resources/block2.png")) {}
+	if (!texture_bookblock.loadFromFile("Resources/bookblock.png")) {}
+	if (!texture_mailblock3.loadFromFile("Resources/mailblock3.png")) {}
+	if (!texture_mailblock0.loadFromFile("Resources/mailblock0.png")) {}
 
 	sf::Sprite sprite_block1(texture_block1);
 	sf::Sprite sprite_block2(texture_block2);

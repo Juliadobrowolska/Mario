@@ -18,7 +18,7 @@ EnergyDrink::EnergyDrink(float i_x, float i_y) :
 	sprite(texture)
 {
 	// Dopasowanie do Twojej nazwy pliku: "Energydrink.png" (małe 'd')
-	texture.loadFromFile("Resources/Energydrink.png");
+	if (!texture.loadFromFile("Resources/Energydrink.png")) {}
 	sprite.setTexture(texture);
 	sprite.setPosition(sf::Vector2f{x, y});
 }

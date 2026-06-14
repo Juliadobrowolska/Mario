@@ -3,9 +3,11 @@
 #include <vector>
 #include <memory>
 #include <queue>
-#include "Headers/MapManager.hpp"
-#include "Headers/EnergyDrink.hpp"
 
+#include "Global.hpp"
+#include "MapManager.hpp"
+
+class EnergyDrink;
 class Enemy;
 
 class Student
@@ -13,7 +15,7 @@ class Student
 public:
     Student();
     void reset_stats();
-    void update(unsigned short map_width, MapManager& map_manager, std::vector<EnergyDrink>& energy_drinks, std::vector<std::shared_ptr<Enemy>>& enemies);
+    void update(unsigned short map_width, MapManager& map_manager, std::vector<EnergyDrink>& energy_drinks, const std::vector<std::shared_ptr<Enemy>>& enemies);
     void draw(sf::RenderWindow& window, unsigned int view_x);
     void die(bool time_out);
     void collect_energy_drink();
@@ -23,6 +25,7 @@ public:
     bool get_dead() const;
     bool is_sugar_overdose() const;
     unsigned int get_energy_drinks() const;
+    sf::FloatRect get_hitbox() const;
 
     bool has_queued_enemy();
     std::pair<unsigned char, sf::Vector2f> pop_queued_enemy();
@@ -39,6 +42,4 @@ private:
     sf::Sprite sprite;
     
     std::queue<std::pair<unsigned char, sf::Vector2f>> enemy_queue;
-
-    sf::FloatRect get_hitbox() const;
 };

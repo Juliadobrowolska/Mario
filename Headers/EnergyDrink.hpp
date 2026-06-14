@@ -2,7 +2,6 @@
 #include <SFML/Graphics.hpp>
 #include "Global.hpp"
 #include "MapManager.hpp"
-#include "Student.hpp"
 
 class Student;
 
