@@ -36,10 +36,11 @@ bool Enemy::check_student_stomp(Student& i_student) const
 	sf::FloatRect enemy_hitbox = get_hitbox();
 
 	// Sprawdzamy kolizję poziomą oraz czy Student spada wprost na głowę wroga
-	if (student_hitbox.intersects(enemy_hitbox))
+	auto intersection = student_hitbox.findIntersection(enemy_hitbox);
+	if (intersection)
 	{
 		// Jeśli spód hitboba Studenta jest blisko czubka głowy wroga, traktujemy to jako nadeptanie
-		if (student_hitbox.top + student_hitbox.height <= enemy_hitbox.top + 8.0f)
+		if (student_hitbox.position.y + student_hitbox.size.y <= enemy_hitbox.position.y + 8.0f)
 		{
 			return true;
 		}

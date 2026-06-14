@@ -5,7 +5,6 @@
 #include <memory>
 #include <SFML/Graphics.hpp>
 #include "Headers/Global.hpp"
-#include "Headers/Animation.hpp"
 #include "Headers/MapManager.hpp"
 #include "Headers/EnergyDrink.hpp"
 #include "Headers/Enemy.hpp"
@@ -22,7 +21,8 @@ Student::Student() :
 	energy_drinks_collected(0),
 	jump_timer(0),
 	animation_timer(0.0f),
-	current_frame(0)
+	current_frame(0),
+	sprite(texture_small)
 {
 	texture_small.loadFromFile("Resources/juststudent.png");
 	texture_big.loadFromFile("Resources/happybigstudent.png");
@@ -42,24 +42,24 @@ void Student::reset_stats()
 	jump_timer = 0;
 	
 	sprite.setTexture(texture_small);
-	sprite.setPosition(x, y);
+	sprite.setPosition(sf::Vector2f{x, y});
 }
 
 void Student::update(unsigned short map_width, MapManager& map_manager, std::vector<EnergyDrink>& energy_drinks, std::vector<std::shared_ptr<Enemy>>& enemies)
 {
 	if (dead) return;
 
-	bool move_left = sf::Keyboard::isKeyPressed(sf::Keyboard::Left);
-	bool move_right = sf::Keyboard::isKeyPressed(sf::Keyboard::Right);
-	bool jump_pressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Space) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up);
+	bool move_left = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left);
+	bool move_right = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right);
+	bool jump_pressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up);
 
 	if (move_left)
 	{
-		vx = -STUDENT_SPEED;
+		vx = -STUDENT_WALK_SPEED;
 	}
 	else if (move_right)
 	{
-		vx = STUDENT_SPEED;
+		vx = STUDENT_WALK_SPEED;
 	}
 	else
 	{
@@ -67,12 +67,12 @@ void Student::update(unsigned short map_width, MapManager& map_manager, std::vec
 	}
 
 	vy += GRAVITY;
-	if (vy > MAX_FALL_SPEED) vy = MAX_FALL_SPEED;
+	if (vy > MAX_VERTICAL_SPEED) vy = MAX_VERTICAL_SPEED;
 
 	sf::FloatRect ground_check_hitbox = get_hitbox();
-	ground_check_hitbox.top += 1.0f;
-	bool on_ground = !map_manager.map_collision({ Cell::Wall, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::ActivatedMailBlock }, ground_check_hitbox).empty() && 
-	                 map_manager.map_collision({ Cell::Wall, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::ActivatedMailBlock }, ground_check_hitbox)[0] == 1;
+	ground_check_hitbox.position.y += 1.0f;
+	auto ground_collisions = map_manager.map_collision({ Cell::Wall, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::ActivatedMailBlock }, ground_check_hitbox);
+	bool on_ground = !ground_collisions.empty() && ground_collisions[0] == 1;
 
 	if (on_ground)
 	{
@@ -120,8 +120,8 @@ void Student::update(unsigned short map_width, MapManager& map_manager, std::vec
 			y -= vy;
 			vy = 0.0f;
 
-			unsigned short tile_x = static_cast<unsigned short>((hitbox.left + hitbox.width / 2) / CELL_SIZE);
-			unsigned short tile_y = static_cast<unsigned short>(hitbox.top / CELL_SIZE);
+			unsigned short tile_x = static_cast<unsigned short>((hitbox.position.x + hitbox.size.x / 2.0f) / CELL_SIZE);
+			unsigned short tile_y = static_cast<unsigned short>(hitbox.position.y / CELL_SIZE);
 			
 			if (map_manager.get_cell(tile_x, tile_y) == Cell::MailBlock)
 			{
@@ -169,8 +169,8 @@ void Student::update(unsigned short map_width, MapManager& map_manager, std::vec
 			texture_small.loadFromFile("Resources/run" + std::to_string(current_frame + 1) + ".png");
 			sprite.setTexture(texture_small);
 		}
-		sprite.setScale(1.0f, 1.0f);
-		sprite.setOrigin(0.0f, 0.0f);
+		sprite.setScale(sf::Vector2f{1.0f, 1.0f});
+		sprite.setOrigin(sf::Vector2f{0.0f, 0.0f});
 	}
 	else if (vx < 0.0f) // Bieg w lewo (left1, left2)
 	{
@@ -179,16 +179,16 @@ void Student::update(unsigned short map_width, MapManager& map_manager, std::vec
 			// Duży student korzysta z odbicia lustrzanego bigrun, bo nie ma osobnych plików left dla dużego
 			texture_big.loadFromFile("Resources/bigrun" + std::to_string((current_frame % 2) + 1) + ".png");
 			sprite.setTexture(texture_big);
-			sprite.setScale(-1.0f, 1.0f);
-			sprite.setOrigin(sprite.getLocalBounds().width, 0.0f);
+			sprite.setScale(sf::Vector2f{-1.0f, 1.0f});
+			sprite.setOrigin(sf::Vector2f{sprite.getLocalBounds().size.x, 0.0f});
 		}
 		else
 		{
 			// Mały Student ładuje dedykowane pliki left1 i left2!
 			texture_small.loadFromFile("Resources/left" + std::to_string((current_frame % 2) + 1) + ".png");
 			sprite.setTexture(texture_small);
-			sprite.setScale(1.0f, 1.0f);
-			sprite.setOrigin(0.0f, 0.0f);
+			sprite.setScale(sf::Vector2f{1.0f, 1.0f});
+			sprite.setOrigin(sf::Vector2f{0.0f, 0.0f});
 		}
 	}
 	else // Stanie w miejscu
@@ -203,11 +203,11 @@ void Student::update(unsigned short map_width, MapManager& map_manager, std::vec
 			texture_small.loadFromFile("Resources/juststudent.png");
 			sprite.setTexture(texture_small);
 		}
-		sprite.setScale(1.0f, 1.0f);
-		sprite.setOrigin(0.0f, 0.0f);
+		sprite.setScale(sf::Vector2f{1.0f, 1.0f});
+		sprite.setOrigin(sf::Vector2f{0.0f, 0.0f});
 	}
 
-	sprite.setPosition(x, y);
+	sprite.setPosition(sf::Vector2f{x, y});
 }
 
 void Student::collect_energy_drink()
@@ -241,7 +241,7 @@ sf::FloatRect Student::get_hitbox() const
 {
 	float width = CELL_SIZE - 4.0f;
 	float height = is_big ? (CELL_SIZE * 2.0f) - 4.0f : CELL_SIZE - 2.0f;
-	return sf::FloatRect(x + 2.0f, is_big ? y - CELL_SIZE + 4.0f : y + 2.0f, width, height);
+	return sf::FloatRect(sf::Vector2f{x + 2.0f, is_big ? y - CELL_SIZE + 4.0f : y + 2.0f}, sf::Vector2f{width, height});
 }
 
 float Student::get_x() const { return x; }
@@ -261,7 +261,7 @@ std::pair<unsigned char, sf::Vector2f> Student::pop_queued_enemy()
 void Student::draw(sf::RenderWindow& window, unsigned int view_x)
 {
 	sf::Vector2f original_pos = sprite.getPosition();
-	sprite.setPosition(original_pos.x - view_x, original_pos.y);
+	sprite.setPosition(sf::Vector2f{original_pos.x - static_cast<float>(view_x), original_pos.y});
 	window.draw(sprite);
 	sprite.setPosition(original_pos);
 }

@@ -10,7 +10,6 @@
 #include "Headers/Mark2.hpp"
 #include "Headers/Professor.hpp"
 #include "Headers/EnergyDrink.hpp"
-#include "Headers/Animation.hpp"
 
 enum class GameState
 {
@@ -25,16 +24,16 @@ int main()
 	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
 	// Tworzymy większe okno systemowe (960x720), aby gra nie była miniaturowa
-	sf::RenderWindow window(sf::VideoMode(960, 720), "Super Student Bros", sf::Style::Close);
+	sf::RenderWindow window(sf::VideoMode(sf::Vector2u{960, 720}), "Super Student Bros", sf::Style::Close);
 	window.setFramerateLimit(60);
 
 	// Tworzymy widok SFML o logicznej rozdzielczości retro (320x240)
 	// Dzięki temu SFML sam idealnie i ostro rozciągnie grafikę na całe okno!
-	sf::View game_view(sf::FloatRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
+	sf::View game_view(sf::FloatRect(sf::Vector2f{0.0f, 0.0f}, sf::Vector2f{static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT)}));
 	window.setView(game_view);
 
 	sf::Font font;
-	if (!font.loadFromFile("Resources/arial.ttf"))
+	if (!font.openFromFile("Resources/arial.ttf"))
 	{
 		return -1;
 	}
@@ -48,9 +47,9 @@ int main()
 
 	sf::Sprite sprite_block1(texture_block1);
 	sf::Sprite sprite_block2(texture_block2);
-	sprite_bookblock.setTexture(texture_bookblock);
-	sprite_mailblock3.setTexture(texture_mailblock3);
-	sprite_mailblock0.setTexture(texture_mailblock0);
+	sf::Sprite sprite_bookblock(texture_bookblock);
+	sf::Sprite sprite_mailblock3(texture_mailblock3);
+	sf::Sprite sprite_mailblock0(texture_mailblock0);
 
 	MapManager map_manager;
 	Student student;
@@ -67,83 +66,86 @@ int main()
 	const float TIME_STEP = 1.0f / 60.0f;
 
 	// UI i Teksty dopasowane rozmiarowo do logicznego ekranu 320x240
-	sf::Text menu_title("SUPER STUDENT BROS", font, 18);
+	sf::Text menu_title(font, "SUPER STUDENT BROS", 18);
 	menu_title.setFillColor(sf::Color::Yellow);
-	menu_title.setPosition(20.0f, 20.0f);
+	menu_title.setPosition(sf::Vector2f{20.0f, 20.0f});
 
-	sf::Text menu_options("Nacisnij ENTER aby zaczac\n\nUzyj STRZALEK gora/dol by wybrac trudnosc:", font, 10);
+	sf::Text menu_options(font, "Nacisnij ENTER aby zaczac\n\nUzyj STRZALEK gora/dol by wybrac trudnosc:", 10);
 	menu_options.setFillColor(sf::Color::White);
-	menu_options.setPosition(20.0f, 60.0f);
+	menu_options.setPosition(sf::Vector2f{20.0f, 60.0f});
 
-	sf::Text difficulty_text("", font, 11);
-	difficulty_text.setPosition(20.0f, 110.0f);
+	sf::Text difficulty_text(font, "", 11);
+	difficulty_text.setPosition(sf::Vector2f{20.0f, 110.0f});
 
-	sf::Text hud_text("", font, 9);
+	sf::Text hud_text(font, "", 9);
 	hud_text.setFillColor(sf::Color::White);
 
-	sf::Text pause_text("PAUZA\n\nNacisnij P aby wznowic", font, 16);
+	sf::Text pause_text(font, "PAUZA\n\nNacisnij P aby wznowic", 16);
 	pause_text.setFillColor(sf::Color::White);
-	pause_text.setPosition(80.0f, 90.0f);
+	pause_text.setPosition(sf::Vector2f{80.0f, 90.0f});
 
-	sf::Text game_over_text("GAME OVER\n\nNacisnij ENTER aby wrocic", font, 14);
+	sf::Text game_over_text(font, "GAME OVER\n\nNacisnij ENTER aby wrocic", 14);
 	game_over_text.setFillColor(sf::Color::Red);
-	game_over_text.setPosition(60.0f, 100.0f);
+	game_over_text.setPosition(sf::Vector2f{60.0f, 100.0f});
 
 	while (window.isOpen())
 	{
-		sf::Event event;
-		while (window.pollEvent(event))
+		while (auto event = window.pollEvent())
 		{
-			if (event.type == sf::Event::Closed)
+			if (event->is<sf::Event::Closed>())
 			{
 				window.close();
 			}
-
-			if (event.type == sf::Event::KeyPressed)
+			else if (event->is<sf::Event::KeyPressed>())
 			{
-				if (game_state == GameState::Menu)
+				auto key_event = event->getIf<sf::Event::KeyPressed>();
+				if (key_event)
 				{
-					if (event.key.code == sf::Keyboard::Up || event.key.code == sf::Keyboard::Down)
+					auto key_code = key_event->code;
+					if (game_state == GameState::Menu)
 					{
-						hard_mode = !hard_mode;
-					}
-
-					if (event.key.code == sf::Keyboard::Enter)
-					{
-						current_level = 1;
-						if (map_manager.load_level(current_level))
+						if (key_code == sf::Keyboard::Key::Up || key_code == sf::Keyboard::Key::Down)
 						{
-							student.reset_stats();
-							energy_drinks.clear();
-							enemies.clear();
+							hard_mode = !hard_mode;
+						}
 
-							for (const auto& pos : map_manager.get_enemy_positions())
+						if (key_code == sf::Keyboard::Key::Enter)
+						{
+							current_level = 1;
+							if (map_manager.load_level(current_level))
 							{
-								if (pos.type == 0)
-									enemies.push_back(std::make_shared<Mark2>(pos.x, pos.y));
-								else
-									enemies.push_back(std::make_shared<Professor>(pos.x, pos.y));
-							}
+								student.reset_stats();
+								energy_drinks.clear();
+								enemies.clear();
 
-							ects_points = 0;
-							game_timer = hard_mode ? 200.0f : 400.0f; 
-							delta_clock.restart();
-							game_state = GameState::Playing;
+								for (const auto& pos : map_manager.get_enemy_positions())
+								{
+									if (pos.type == 0)
+										enemies.push_back(std::make_shared<Mark2>(pos.x, pos.y));
+									else
+										enemies.push_back(std::make_shared<Professor>(pos.x, pos.y));
+								}
+
+								ects_points = 0;
+								game_timer = hard_mode ? 200.0f : 400.0f;
+								delta_clock.restart();
+								game_state = GameState::Playing;
+							}
 						}
 					}
-				}
-				else if (game_state == GameState::Playing && event.key.code == sf::Keyboard::P)
-				{
-					game_state = GameState::Pause;
-				}
-				else if (game_state == GameState::Pause && event.key.code == sf::Keyboard::P)
-				{
-					delta_clock.restart();
-					game_state = GameState::Playing;
-				}
-				else if (game_state == GameState::GameOver && event.key.code == sf::Keyboard::Enter)
-				{
-					game_state = GameState::Menu;
+					else if (game_state == GameState::Playing && key_code == sf::Keyboard::Key::P)
+					{
+						game_state = GameState::Pause;
+					}
+					else if (game_state == GameState::Pause && key_code == sf::Keyboard::Key::P)
+					{
+						delta_clock.restart();
+						game_state = GameState::Playing;
+					}
+					else if (game_state == GameState::GameOver && key_code == sf::Keyboard::Key::Enter)
+					{
+						game_state = GameState::Menu;
+					}
 				}
 			}
 		}
@@ -227,7 +229,7 @@ int main()
 		if (game_state == GameState::Menu)
 		{
 			// Przed rysowaniem menu resetujemy widok kamery do pozycji wyjściowej (0,0)
-			game_view.setCenter(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+			game_view.setCenter(sf::Vector2f{SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f});
 			window.setView(game_view);
 
 			if (hard_mode)
@@ -248,7 +250,7 @@ int main()
 		else if (game_state == GameState::Playing || game_state == GameState::Pause)
 		{
 			// Ustawiamy widok kamery na środek ekranu z uwzględnieniem przewijania (view_x)
-			game_view.setCenter(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+			game_view.setCenter(sf::Vector2f{SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f});
 			window.setView(game_view);
 
 			short start_tile_x = static_cast<short>(view_x / CELL_SIZE);
@@ -266,28 +268,28 @@ int main()
 					{
 						if (y >= (SCREEN_HEIGHT / CELL_SIZE) - 2)
 						{
-							sprite_block2.setPosition(draw_x, draw_y);
+							sprite_block2.setPosition(sf::Vector2f{static_cast<float>(draw_x), static_cast<float>(draw_y)});
 							window.draw(sprite_block2);
 						}
 						else
 						{
-							sprite_block1.setPosition(draw_x, draw_y);
+							sprite_block1.setPosition(sf::Vector2f{static_cast<float>(draw_x), static_cast<float>(draw_y)});
 							window.draw(sprite_block1);
 						}
 					}
 					else if (cell == Cell::Platform)
 					{
-						sprite_bookblock.setPosition(draw_x, draw_y);
+						sprite_bookblock.setPosition(sf::Vector2f{static_cast<float>(draw_x), static_cast<float>(draw_y)});
 						window.draw(sprite_bookblock);
 					}
 					else if (cell == Cell::MailBlock)
 					{
-						sprite_mailblock3.setPosition(draw_x, draw_y);
+						sprite_mailblock3.setPosition(sf::Vector2f{static_cast<float>(draw_x), static_cast<float>(draw_y)});
 						window.draw(sprite_mailblock3);
 					}
 					else if (cell == Cell::ActivatedMailBlock)
 					{
-						sprite_mailblock0.setPosition(draw_x, draw_y);
+						sprite_mailblock0.setPosition(sf::Vector2f{static_cast<float>(draw_x), static_cast<float>(draw_y)});
 						window.draw(sprite_mailblock0);
 					}
 				}
@@ -300,7 +302,7 @@ int main()
 			// HUD statyczny na górze ekranu
 			std::string mode_label = hard_mode ? "HARD" : "NORMAL";
 			hud_text.setString("ECTS: " + std::to_string(ects_points) + "  SEM: " + std::to_string(current_level) + "  TIME: " + std::to_string(static_cast<int>(game_timer)) + "  [" + mode_label + "]");
-			hud_text.setPosition(5.0f, 5.0f);
+			hud_text.setPosition(sf::Vector2f{5.0f, 5.0f});
 			window.draw(hud_text);
 
 			if (game_state == GameState::Pause)
@@ -310,7 +312,7 @@ int main()
 		}
 		else if (game_state == GameState::GameOver)
 		{
-			game_view.setCenter(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+			game_view.setCenter(sf::Vector2f{SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f});
 			window.setView(game_view);
 			window.draw(game_over_text);
 		}

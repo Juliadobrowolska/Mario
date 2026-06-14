@@ -1,0 +1,175 @@
+c:\Mario\main.cpp: In function 'int main()':
+c:\Mario\main.cpp:42:36: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   42 |         texture_block1.loadFromFile("Resources/block1.png");
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+In file included from C:/msys64/ucrt64/include/SFML/Graphics/Font.hpp:34,
+                 from C:/msys64/ucrt64/include/SFML/Graphics.hpp:36,
+                 from c:\Mario\main.cpp:1:
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\main.cpp:43:36: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   43 |         texture_block2.loadFromFile("Resources/block2.png");
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\main.cpp:44:39: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   44 |         texture_bookblock.loadFromFile("Resources/bookblock.png");
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\main.cpp:45:40: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   45 |         texture_mailblock3.loadFromFile("Resources/mailblock3.png");
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\main.cpp:46:40: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   46 |         texture_mailblock0.loadFromFile("Resources/mailblock0.png");
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp: In constructor 'Student::Student()':
+c:\Mario\Student.cpp:27:35: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   27 |         texture_small.loadFromFile("Resources/juststudent.png");
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from C:/msys64/ucrt64/include/SFML/Graphics/Font.hpp:34,
+                 from C:/msys64/ucrt64/include/SFML/Graphics.hpp:36,
+                 from c:\Mario\Student.cpp:6:
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp:28:33: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   28 |         texture_big.loadFromFile("Resources/happybigstudent.png");
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp: In member function 'void Student::update(short unsigned int, MapManager&, std::vector<EnergyDrink>&, std::vector<std::shared_ptr<Enemy> >&)':
+c:\Mario\Student.cpp:151:49: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  151 |                         texture_big.loadFromFile("Resources/bigstudentjump" + std::to_string((current_frame % 3) + 1) + ".png");
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp:156:51: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  156 |                         texture_small.loadFromFile("Resources/jump" + std::to_string((current_frame % 3) + 1) + ".png");
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp:164:49: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  164 |                         texture_big.loadFromFile("Resources/bigrun" + std::to_string((current_frame % 2) + 1) + ".png");
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp:169:51: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  169 |                         texture_small.loadFromFile("Resources/run" + std::to_string(current_frame + 1) + ".png");
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp:180:49: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  180 |                         texture_big.loadFromFile("Resources/bigrun" + std::to_string((current_frame % 2) + 1) + ".png");
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp:188:51: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  188 |                         texture_small.loadFromFile("Resources/left" + std::to_string((current_frame % 2) + 1) + ".png");
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp:198:49: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  198 |                         texture_big.loadFromFile("Resources/happybigstudent.png");
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp:203:51: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  203 |                         texture_small.loadFromFile("Resources/juststudent.png");
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Student.cpp: In member function 'void Student::die(bool)':
+c:\Mario\Student.cpp:235:43: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+  235 |                 texture_small.loadFromFile("Resources/gameover.png");
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\EnergyDrink.cpp: In constructor 'EnergyDrink::EnergyDrink(float, float)':
+c:\Mario\EnergyDrink.cpp:21:29: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   21 |         texture.loadFromFile("Resources/Energydrink.png");
+      |         ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from C:/msys64/ucrt64/include/SFML/Graphics/Font.hpp:34,
+                 from C:/msys64/ucrt64/include/SFML/Graphics.hpp:36,
+                 from c:\Mario\EnergyDrink.cpp:4:
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Professor.cpp: In constructor 'Professor::Professor(float, float)':
+c:\Mario\Professor.cpp:23:29: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   23 |         texture.loadFromFile("Resources/profesorhideleft1.png");
+      |         ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from C:/msys64/ucrt64/include/SFML/Graphics/Font.hpp:34,
+                 from C:/msys64/ucrt64/include/SFML/Graphics.hpp:36,
+                 from c:\Mario\Professor.cpp:5:
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Professor.cpp: In member function 'virtual void Professor::update(unsigned int, const std::vector<std::shared_ptr<Enemy> >&, const MapManager&, Student&)':
+c:\Mario\Professor.cpp:93:37: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   93 |                 texture.loadFromFile("Resources/profesorhide" + std::string(vx < 0 ? "left" : "right") + std::to_string(current_frame + 1) + ".png");
+      |                 ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Professor.cpp:95:37: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   95 |                 texture.loadFromFile("Resources/profesor" + std::string(vx < 0 ? "left" : "right") + std::to_string(current_frame + 1) + ".png");
+      |                 ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Mark2.cpp: In constructor 'Mark2::Mark2(float, float)':
+c:\Mario\Mark2.cpp:24:29: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   24 |         texture.loadFromFile("Resources/grade2left1.png");
+      |         ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from C:/msys64/ucrt64/include/SFML/Graphics/Font.hpp:34,
+                 from C:/msys64/ucrt64/include/SFML/Graphics.hpp:36,
+                 from c:\Mario\Mark2.cpp:5:
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Mark2.cpp: In member function 'void Mark2::crush_by_professor()':
+c:\Mario\Mark2.cpp:35:37: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   35 |                 texture.loadFromFile("Resources/2dead.png");
+      |                 ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Mark2.cpp: In member function 'virtual void Mark2::update(unsigned int, const std::vector<std::shared_ptr<Enemy> >&, const MapManager&, Student&)':
+c:\Mario\Mark2.cpp:51:37: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   51 |                 texture.loadFromFile("Resources/2jumpeddead.png");
+      |                 ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Mark2.cpp:95:37: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   95 |                 texture.loadFromFile("Resources/grade2left" + std::to_string(current_frame + 1) + ".png");
+      |                 ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~
+c:\Mario\Mark2.cpp:97:37: warning: ignoring return value of 'bool sf::Texture::loadFromFile(const std::filesystem::__cxx11::path&, bool, const sf::IntRect&)', declared with attribute 'nodiscard' [-Wunused-result]
+   97 |                 texture.loadFromFile("Resources/grade2right" + std::to_string(current_frame + 1) + ".png");
+      |                 ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:/msys64/ucrt64/include/SFML/Graphics/Texture.hpp:304:24: note: declared here
+  304 |     [[nodiscard]] bool loadFromFile(const std::filesystem::path& filename, bool sRgb = false, const IntRect& area = {});
+      |                        ^~~~~~~~~~~~

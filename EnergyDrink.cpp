@@ -14,12 +14,13 @@ EnergyDrink::EnergyDrink(float i_x, float i_y) :
 	vy(0.0f),
 	collected(false),
 	spawning(true),
-	spawn_timer(0.0f)
+	spawn_timer(0.0f),
+	sprite(texture)
 {
 	// Dopasowanie do Twojej nazwy pliku: "Energydrink.png" (małe 'd')
 	texture.loadFromFile("Resources/Energydrink.png");
 	sprite.setTexture(texture);
-	sprite.setPosition(x, y);
+	sprite.setPosition(sf::Vector2f{x, y});
 }
 
 void EnergyDrink::update(unsigned int i_view_x, const MapManager& i_map_manager, Student& i_student)
@@ -37,13 +38,13 @@ void EnergyDrink::update(unsigned int i_view_x, const MapManager& i_map_manager,
 			spawning = false;
 		}
 		
-		sprite.setPosition(x, y);
+		sprite.setPosition(sf::Vector2f{x, y});
 		return;
 	}
 
 	// 2. Fizyka grawitacji i poruszania się
 	vy += GRAVITY;
-	if (vy > MAX_FALL_SPEED) vy = MAX_FALL_SPEED;
+	if (vy > MAX_VERTICAL_SPEED) vy = MAX_VERTICAL_SPEED;
 
 	// Ruch w poziomie i kolizje ze ścianami
 	x += vx;
@@ -72,19 +73,20 @@ void EnergyDrink::update(unsigned int i_view_x, const MapManager& i_map_manager,
 	}
 
 	// 3. Kolizja ze Studentem (Zbieranie)
-	if (hitbox.intersects(i_student.get_hitbox()))
+	auto overlap = hitbox.findIntersection(i_student.get_hitbox());
+	if (overlap)
 	{
 		collected = true;
 		i_student.collect_energy_drink();
 	}
 
-	sprite.setPosition(x, y);
+	sprite.setPosition(sf::Vector2f{x, y});
 }
 
 sf::FloatRect EnergyDrink::get_hitbox() const
 {
 	// Puszka ma standardowy rozmiar jednego kafelka mapy
-	return sf::FloatRect(x, y, CELL_SIZE, CELL_SIZE);
+	return sf::FloatRect(sf::Vector2f{x, y}, sf::Vector2f{static_cast<float>(CELL_SIZE), static_cast<float>(CELL_SIZE)});
 }
 
 bool EnergyDrink::get_collected() const
@@ -97,7 +99,7 @@ void EnergyDrink::draw(sf::RenderWindow& i_window, unsigned int i_view_x)
 	if (collected) return;
 
 	sf::Vector2f original_pos = sprite.getPosition();
-	sprite.setPosition(original_pos.x - i_view_x, original_pos.y);
+	sprite.setPosition(sf::Vector2f{original_pos.x - static_cast<float>(i_view_x), original_pos.y});
 	i_window.draw(sprite);
 	sprite.setPosition(original_pos);
 }

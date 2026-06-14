@@ -14,14 +14,16 @@ Mark2::Mark2(float i_x, float i_y) :
 	animation_timer(0.0f),
 	current_frame(0),
 	crushed_by_prof(false),
-	death_timer(0.0f)
+	death_timer(0.0f),
+	sprite(texture)
 {
-	vx = -1.0f; // Rozpoczęcie marszu w lewo
+	// Prędkość zależna od trybu trudności
+	vx = hard_mode ? -1.0f : -0.5f; 
 	vy = 0.0f;
 
 	texture.loadFromFile("Resources/grade2left1.png");
 	sprite.setTexture(texture);
-	sprite.setPosition(x, y);
+	sprite.setPosition(sf::Vector2f{x, y});
 }
 
 void Mark2::crush_by_professor()
@@ -30,36 +32,33 @@ void Mark2::crush_by_professor()
 	{
 		dead = true;
 		crushed_by_prof = true;
-		texture.loadFromFile("Resources/2dead.png"); // Śmierć od walizki profesora
+		texture.loadFromFile("Resources/2dead.png"); 
 		sprite.setTexture(texture);
 	}
 }
 
 void Mark2::update(unsigned int i_view_x, const std::vector<std::shared_ptr<Enemy>>& i_enemies, const MapManager& i_map_manager, Student& i_student)
 {
-	// Logika dla martwej oceny (odliczanie czasu do znikania z ekranu)
 	if (dead)
 	{
 		death_timer += 1.0f / 60.0f;
 		return;
 	}
 
-	// 1. Kolizja ze Studentem (Nadeptanie od góry)
 	if (check_student_stomp(i_student))
 	{
 		dead = true;
-		texture.loadFromFile("Resources/2jumpeddead.png"); // Śmierć przez nadeptanie przez Studenta
+		texture.loadFromFile("Resources/2jumpeddead.png"); 
 		sprite.setTexture(texture);
 		return;
 	}
-	else if (get_hitbox().intersects(i_student.get_hitbox()))
+	else if (get_hitbox().findIntersection(i_student.get_hitbox()))
 	{
-		i_student.die(false); // Student ginie przy zderzeniu bocznym
+		i_student.die(false); 
 	}
 
-	// 2. Grawitacja i ruch kafelkowy
 	vy += GRAVITY;
-	if (vy > MAX_FALL_SPEED) vy = MAX_FALL_SPEED;
+	if (vy > MAX_VERTICAL_SPEED) vy = MAX_VERTICAL_SPEED;
 
 	x += vx;
 	sf::FloatRect hitbox = get_hitbox();
@@ -67,7 +66,7 @@ void Mark2::update(unsigned int i_view_x, const std::vector<std::shared_ptr<Enem
 	if (!x_collisions.empty() && x_collisions[0] == 1)
 	{
 		x -= vx;
-		vx = -vx; // Odbicie od ściany
+		vx = -vx; 
 	}
 
 	y += vy;
@@ -85,40 +84,29 @@ void Mark2::update(unsigned int i_view_x, const std::vector<std::shared_ptr<Enem
 		return;
 	}
 
-	// 3. Animacja marszu w lewo/prawo na bazie Twoich klatek
 	animation_timer += 1.0f / 60.0f;
 	if (animation_timer >= 0.2f)
 	{
-		current_frame = (current_frame + 1) % 2; // Naprzemiennie klatka 1 i 2
+		current_frame = (current_frame + 1) % 2; 
 		animation_timer = 0.0f;
 	}
 
 	if (vx < 0.0f)
-	{
 		texture.loadFromFile("Resources/grade2left" + std::to_string(current_frame + 1) + ".png");
-	}
 	else
-	{
 		texture.loadFromFile("Resources/grade2right" + std::to_string(current_frame + 1) + ".png");
-	}
 
 	sprite.setTexture(texture);
-	sprite.setPosition(x, y);
+	sprite.setPosition(sf::Vector2f{x, y});
 }
 
-sf::FloatRect Mark2::get_hitbox() const
-{
-	// Standardowy rozmiar kafelka dla Oceny 2.0
-	return sf::FloatRect(x, y, CELL_SIZE, CELL_SIZE);
-}
+sf::FloatRect Mark2::get_hitbox() const { return sf::FloatRect(sf::Vector2f{x, y}, sf::Vector2f{static_cast<float>(CELL_SIZE), static_cast<float>(CELL_SIZE)}); }
 
 void Mark2::draw(unsigned int i_view_x, sf::RenderWindow& i_window)
 {
-	// Wyświetlaj zwłoki przez 2 sekundy, zanim całkowicie znikną z pamięci ekranu
 	if (dead && death_timer > 2.0f) return;
-
-	sf::Vector2f original_pos = sprite.getPosition();
-	sprite.setPosition(original_pos.x - i_view_x, original_pos.y);
+	sf::Vector2f pos = sprite.getPosition();
+	sprite.setPosition(sf::Vector2f{pos.x - static_cast<float>(i_view_x), pos.y});
 	i_window.draw(sprite);
-	sprite.setPosition(original_pos);
+	sprite.setPosition(pos);
 }

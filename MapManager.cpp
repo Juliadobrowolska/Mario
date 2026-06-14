@@ -31,7 +31,7 @@ bool MapManager::load_level(unsigned short i_level_number)
 	{
 		for (unsigned short y = 0; y < map_height; y++)
 		{
-			sf::Color pixel = level_image.getPixel(x, y);
+			sf::Color pixel = level_image.getPixel(sf::Vector2u{static_cast<unsigned int>(x), static_cast<unsigned int>(y)});
 
 			// KOLORY I ICH POWIĄZANIE Z TWOIMI GRAFIKAMI:
 			// Czarny piksel to podłoga/ściany (block1.png / block2.png)
@@ -108,10 +108,10 @@ std::vector<unsigned char> MapManager::map_collision(const std::vector<Cell>& i_
 {
 	std::vector<unsigned char> output;
 
-	short start_x = std::max(0, static_cast<int>(floor(i_hitbox.left / CELL_SIZE)));
-	short end_x = std::min(static_cast<int>(map_width - 1), static_cast<int>(ceil((i_hitbox.left + i_hitbox.width) / CELL_SIZE)));
-	short start_y = std::max(0, static_cast<int>(floor(i_hitbox.top / CELL_SIZE)));
-	short end_y = std::min(static_cast<int>(map_height - 1), static_cast<int>(ceil((i_hitbox.top + i_hitbox.height) / CELL_SIZE)));
+	short start_x = std::max(0, static_cast<int>(std::floor(i_hitbox.position.x / CELL_SIZE)));
+	short end_x = std::min(static_cast<int>(map_width - 1), static_cast<int>(std::ceil((i_hitbox.position.x + i_hitbox.size.x) / CELL_SIZE)));
+	short start_y = std::max(0, static_cast<int>(std::floor(i_hitbox.position.y / CELL_SIZE)));
+	short end_y = std::min(static_cast<int>(map_height - 1), static_cast<int>(std::ceil((i_hitbox.position.y + i_hitbox.size.y) / CELL_SIZE)));
 
 	for (short x = start_x; x < end_x; x++)
 	{
