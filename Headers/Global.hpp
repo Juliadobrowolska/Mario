@@ -32,7 +32,6 @@ constexpr unsigned char KOOPA_WALK_ANIMATION_SPEED = 8;
 constexpr unsigned short KOOPA_GET_OUT_DURATION = 512;
 
 // --- TWOJE BLOKI NA MAPIE ---
-// Te definicje idealnie korelują z kolorami RGB w MapManager.cpp
 enum class Cell
 {
 	ActivatedMailBlock, // Szary mailblock0 (po uderzeniu głową)
@@ -42,3 +41,6 @@ enum class Cell
 	MailBlock,          // Fioletowy mailblock3 (skrzynka z losowym łupem)
 	Wall                // Czarny block1 (stabilna podłoga) lub bordowy block2 (dolna podłoga)
 };
+
+// Globalna flaga poziomu trudności (Normalny / Trudny)
+extern bool hard_mode;

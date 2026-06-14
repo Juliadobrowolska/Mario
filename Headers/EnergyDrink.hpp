@@ -1,20 +1,32 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "Global.hpp"
+#include "MapManager.hpp"
+#include "Student.hpp"
+
+class Student;
 
 class EnergyDrink
 {
 public:
-    EnergyDrink() : x(0), y(0), dead(false) {}
-    void update() {}
-    void draw(sf::RenderWindow& /*window*/) {}
+	EnergyDrink(float i_x, float i_y);
 
-    sf::FloatRect get_hit_box() const { return sf::FloatRect(sf::Vector2f{x, y}, sf::Vector2f{CELL_SIZE, CELL_SIZE}); }
-    void set_dead(bool v) { dead = v; }
-    bool get_dead() const { return dead; }
+	void update(unsigned int i_view_x, const MapManager& i_map_manager, Student& i_student);
+	void draw(sf::RenderWindow& i_window, unsigned int i_view_x);
 
-    float x;
-    float y;
+	sf::FloatRect get_hitbox() const;
+	bool get_collected() const;
+
 private:
-    bool dead;
+	float x;
+	float y;
+	float vx;
+	float vy;
+
+	bool collected;
+	bool spawning;      // true gdy puszka płynnie wysuwa się w górę z bloku
+	float spawn_timer;
+
+	sf::Sprite sprite;
+	sf::Texture texture;
 };

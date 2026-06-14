@@ -1,36 +1,37 @@
-#include <array>
-#include <cmath>
-#include <chrono>
-#include <algorithm>
+#include <SFML/Graphics.hpp>
 #include <vector>
 #include <memory>
-#include <SFML/Graphics.hpp>
-
+#include <cstdlib>
+#include <ctime>
 #include "Headers/Global.hpp"
-#include "Headers/Animation.hpp"
 #include "Headers/MapManager.hpp"
 #include "Headers/Student.hpp"
-#include "Headers/EnergyDrink.hpp"
 #include "Headers/Enemy.hpp"
 #include "Headers/Mark2.hpp"
 #include "Headers/Professor.hpp"
+#include "Headers/EnergyDrink.hpp"
+#include "Headers/Animation.hpp"
 
-// Definition of available game states
 enum class GameState
 {
 	Menu,
 	Playing,
 	Pause,
-	GameOver,
-	TooMuchSugar
+	GameOver
 };
 
 int main()
 {
-	sf::RenderWindow window(sf::VideoWindow(SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2), "USOS: The Game", sf::Style::Close);
-	window.setView(sf::View(sf::FloatRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)));
+	std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
-	srand(static_cast<unsigned int>(time(0)));
+	// Tworzymy większe okno systemowe (960x720), aby gra nie była miniaturowa
+	sf::RenderWindow window(sf::VideoMode(960, 720), "Super Student Bros", sf::Style::Close);
+	window.setFramerateLimit(60);
+
+	// Tworzymy widok SFML o logicznej rozdzielczości retro (320x240)
+	// Dzięki temu SFML sam idealnie i ostro rozciągnie grafikę na całe okno!
+	sf::View game_view(sf::FloatRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
+	window.setView(game_view);
 
 	sf::Font font;
 	if (!font.loadFromFile("Resources/arial.ttf"))
@@ -38,43 +39,55 @@ int main()
 		return -1;
 	}
 
-	sf::Text hud_text;
-	hud_text.setFont(font);
-	hud_text.setCharacterSize(12);
-	hud_text.setFillColor(sf::Color::White);
+	sf::Texture texture_block1, texture_block2, texture_bookblock, texture_mailblock3, texture_mailblock0;
+	texture_block1.loadFromFile("Resources/block1.png");
+	texture_block2.loadFromFile("Resources/block2.png");
+	texture_bookblock.loadFromFile("Resources/bookblock.png");
+	texture_mailblock3.loadFromFile("Resources/mailblock3.png");
+	texture_mailblock0.loadFromFile("Resources/mailblock0.png");
 
-	sf::Text menu_text;
-	menu_text.setFont(font);
-	menu_text.setCharacterSize(14);
-	menu_text.setFillColor(sf::Color::White);
+	sf::Sprite sprite_block1(texture_block1);
+	sf::Sprite sprite_block2(texture_block2);
+	sprite_bookblock.setTexture(texture_bookblock);
+	sprite_mailblock3.setTexture(texture_mailblock3);
+	sprite_mailblock0.setTexture(texture_mailblock0);
 
-	// Separate text object for the main game title
-	sf::Text title_text;
-	title_text.setFont(font);
-	title_text.setCharacterSize(20);
-	title_text.setFillColor(sf::Color::Yellow);
-
-	// Separate text objects for difficulty options to handle different colors
-	sf::Text easy_text;
-	easy_text.setFont(font);
-	easy_text.setCharacterSize(14);
-
-	sf::Text hard_text;
-	hard_text.setFont(font);
-	hard_text.setCharacterSize(14);
-
-	GameState game_state = GameState::Menu;
-	unsigned int ects_points = 0;
-	unsigned short game_timer = 400;
-	bool hard_mode = false;
-
-	sf::Clock game_clock;
-	float time_accumulator = 0.0f;
-
-	Student student;
 	MapManager map_manager;
+	Student student;
 	std::vector<EnergyDrink> energy_drinks;
 	std::vector<std::shared_ptr<Enemy>> enemies;
+
+	GameState game_state = GameState::Menu;
+	unsigned short current_level = 1;
+	unsigned int ects_points = 0;
+	float game_timer = 400.0f;
+
+	sf::Clock delta_clock;
+	float time_accumulator = 0.0f;
+	const float TIME_STEP = 1.0f / 60.0f;
+
+	// UI i Teksty dopasowane rozmiarowo do logicznego ekranu 320x240
+	sf::Text menu_title("SUPER STUDENT BROS", font, 18);
+	menu_title.setFillColor(sf::Color::Yellow);
+	menu_title.setPosition(20.0f, 20.0f);
+
+	sf::Text menu_options("Nacisnij ENTER aby zaczac\n\nUzyj STRZALEK gora/dol by wybrac trudnosc:", font, 10);
+	menu_options.setFillColor(sf::Color::White);
+	menu_options.setPosition(20.0f, 60.0f);
+
+	sf::Text difficulty_text("", font, 11);
+	difficulty_text.setPosition(20.0f, 110.0f);
+
+	sf::Text hud_text("", font, 9);
+	hud_text.setFillColor(sf::Color::White);
+
+	sf::Text pause_text("PAUZA\n\nNacisnij P aby wznowic", font, 16);
+	pause_text.setFillColor(sf::Color::White);
+	pause_text.setPosition(80.0f, 90.0f);
+
+	sf::Text game_over_text("GAME OVER\n\nNacisnij ENTER aby wrocic", font, 14);
+	game_over_text.setFillColor(sf::Color::Red);
+	game_over_text.setPosition(60.0f, 100.0f);
 
 	while (window.isOpen())
 	{
@@ -86,17 +99,95 @@ int main()
 				window.close();
 			}
 
-			if (game_state == GameState::Menu)
+			if (event.type == sf::Event::KeyPressed)
 			{
-				if (event.type == sf::Event::KeyPressed)
+				if (game_state == GameState::Menu)
 				{
 					if (event.key.code == sf::Keyboard::Up || event.key.code == sf::Keyboard::Down)
 					{
 						hard_mode = !hard_mode;
 					}
+
 					if (event.key.code == sf::Keyboard::Enter)
 					{
-						map_manager.load_level(1);
+						current_level = 1;
+						if (map_manager.load_level(current_level))
+						{
+							student.reset_stats();
+							energy_drinks.clear();
+							enemies.clear();
+
+							for (const auto& pos : map_manager.get_enemy_positions())
+							{
+								if (pos.type == 0)
+									enemies.push_back(std::make_shared<Mark2>(pos.x, pos.y));
+								else
+									enemies.push_back(std::make_shared<Professor>(pos.x, pos.y));
+							}
+
+							ects_points = 0;
+							game_timer = hard_mode ? 200.0f : 400.0f; 
+							delta_clock.restart();
+							game_state = GameState::Playing;
+						}
+					}
+				}
+				else if (game_state == GameState::Playing && event.key.code == sf::Keyboard::P)
+				{
+					game_state = GameState::Pause;
+				}
+				else if (game_state == GameState::Pause && event.key.code == sf::Keyboard::P)
+				{
+					delta_clock.restart();
+					game_state = GameState::Playing;
+				}
+				else if (game_state == GameState::GameOver && event.key.code == sf::Keyboard::Enter)
+				{
+					game_state = GameState::Menu;
+				}
+			}
+		}
+
+		// --- LOGIKA AKTUALIZACJI (Fizyka 60 FPS) ---
+		if (game_state == GameState::Playing)
+		{
+			float dt = delta_clock.restart().asSeconds();
+			time_accumulator += dt;
+
+			game_timer -= dt;
+			if (game_timer <= 0.0f)
+			{
+				game_timer = 0.0f;
+				student.die(true);
+			}
+
+			if (student.get_dead())
+			{
+				game_state = GameState::GameOver;
+			}
+
+			while (time_accumulator >= TIME_STEP)
+			{
+				student.update(map_manager.get_map_width(), map_manager, energy_drinks, enemies);
+
+				for (auto& drink : energy_drinks)
+				{
+					drink.update(0, map_manager, student);
+				}
+
+				for (auto& enemy : enemies)
+				{
+					enemy->update(0, enemies, map_manager, student);
+				}
+
+				ects_points = student.get_energy_drinks() * 10;
+
+				if (student.get_x() >= (map_manager.get_map_width() - 2) * CELL_SIZE)
+				{
+					current_level = (std::rand() % 2) + 2;
+					
+					if (map_manager.load_level(current_level))
+					{
 						student.reset_stats();
 						energy_drinks.clear();
 						enemies.clear();
@@ -104,178 +195,100 @@ int main()
 						for (const auto& pos : map_manager.get_enemy_positions())
 						{
 							if (pos.type == 0)
-							{
 								enemies.push_back(std::make_shared<Mark2>(pos.x, pos.y));
-							}
 							else
-							{
 								enemies.push_back(std::make_shared<Professor>(pos.x, pos.y));
-							}
 						}
+						game_timer += hard_mode ? 100.0f : 200.0f;
+					}
+				}
 
-						ects_points = 0;
-						game_timer = hard_mode ? 200 : 400;
-						game_clock.restart();
-						game_state = GameState::Playing;
-					}
-				}
+				time_accumulator -= TIME_STEP;
 			}
-			// Handle enabling and disabling pause during gameplay
-			else if (game_state == GameState::Playing)
+		}
+
+		// --- OBLICZANIE KAMERY (PREWIJANIE) ---
+		unsigned int view_x = 0;
+		if (game_state == GameState::Playing || game_state == GameState::Pause)
+		{
+			if (student.get_x() > SCREEN_WIDTH / 2.0f)
 			{
-				if (event.type == sf::Event::KeyPressed)
+				view_x = static_cast<unsigned int>(student.get_x() - SCREEN_WIDTH / 2.0f);
+				if (view_x > (map_manager.get_map_width() * CELL_SIZE) - SCREEN_WIDTH)
 				{
-					if (event.key.code == sf::Keyboard::P || event.key.code == sf::Keyboard::Escape)
-					{
-						game_state = GameState::Pause;
-					}
-				}
-			}
-			else if (game_state == GameState::Pause)
-			{
-				if (event.type == sf::Event::KeyPressed)
-				{
-					if (event.key.code == sf::Keyboard::P || event.key.code == sf::Keyboard::Escape)
-					{
-						game_state = GameState::Playing;
-						game_clock.restart(); // Restart the clock to prevent physics from jumping after unpausing
-					}
-				}
-			}
-			else if (game_state == GameState::GameOver || game_state == GameState::TooMuchSugar)
-			{
-				if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
-				{
-					game_state = GameState::Menu;
+					view_x = (map_manager.get_map_width() * CELL_SIZE) - SCREEN_WIDTH;
 				}
 			}
 		}
 
-		window.clear(sf::Color(92, 148, 252));
+		// --- RYSOWANIE EKRANU ---
+		window.clear(sf::Color(100, 149, 237));
 
 		if (game_state == GameState::Menu)
 		{
-			// Drawing the main game title at the top
-			title_text.setString("SUPER STUDENT BROS.");
-			title_text.setPosition(45, 15);
-			window.draw(title_text);
+			// Przed rysowaniem menu resetujemy widok kamery do pozycji wyjściowej (0,0)
+			game_view.setCenter(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+			window.setView(game_view);
 
-			menu_text.setString("Time for a break \n\nTake control over the Student!\n\nSelect difficulty:");
-			menu_text.setPosition(20, 50);
-			window.draw(menu_text);
+			if (hard_mode)
+			{
+				difficulty_text.setString("TRYB: TRUDNY (Kampania Wrzesniowa)");
+				difficulty_text.setFillColor(sf::Color::Red);
+			}
+			else
+			{
+				difficulty_text.setString("TRYB: NORMALNY (Pierwszy Termin)");
+				difficulty_text.setFillColor(sf::Color::Green);
+			}
 
-			// Configure Easy option (Green)
-			easy_text.setString(hard_mode ? "  Easy (Calm semester)" : "> Easy (Calm semester)");
-			easy_text.setFillColor(sf::Color::Green);
-			easy_text.setPosition(40, 135);
-			window.draw(easy_text);
-
-			// Configure Hard option (Red)
-			hard_text.setString(hard_mode ? "> Hard (Too much exams)" : "  Hard (Too much exams)");
-			hard_text.setFillColor(sf::Color::Red);
-			hard_text.setPosition(40, 160);
-			window.draw(hard_text);
-
-			menu_text.setString("Press ENTER to start the session...");
-			menu_text.setPosition(30, 200);
-			window.draw(menu_text);
+			window.draw(menu_title);
+			window.draw(menu_options);
+			window.draw(difficulty_text);
 		}
-		// Logic for rendering the game world during active gameplay OR pause
 		else if (game_state == GameState::Playing || game_state == GameState::Pause)
 		{
-			float dt = game_clock.restart().asSeconds();
-			
-			// Update physics and timers ONLY when the game is NOT paused
-			if (game_state == GameState::Playing)
+			// Ustawiamy widok kamery na środek ekranu z uwzględnieniem przewijania (view_x)
+			game_view.setCenter(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+			window.setView(game_view);
+
+			short start_tile_x = static_cast<short>(view_x / CELL_SIZE);
+			short end_tile_x = start_tile_x + (SCREEN_WIDTH / CELL_SIZE) + 2;
+
+			for (short x = start_tile_x; x < end_tile_x; x++)
 			{
-				time_accumulator += dt;
-
-				static float second_counter = 0.0f;
-				second_counter += dt;
-				if (second_counter >= 1.0f)
+				for (short y = 0; y < SCREEN_HEIGHT / CELL_SIZE; y++)
 				{
-					if (game_timer > 0) game_timer--;
-					else student.die(true);
-					second_counter = 0.0f;
-				}
+					Cell cell = map_manager.get_cell(x, y);
+					float draw_x = static_cast<float>(x * CELL_SIZE - view_x);
+					float draw_y = static_cast<float>(y * CELL_SIZE);
 
-				while (time_accumulator >= 1.0f / 60.0f)
-				{
-					unsigned int view_x = std::max(0, static_cast<int>(student.get_x()) - SCREEN_WIDTH / 2);
-					view_x = std::min(view_x, static_cast<unsigned int>(map_manager.get_map_width() * CELL_SIZE - SCREEN_WIDTH));
-
-					student.update(map_manager.get_map_width(), map_manager, energy_drinks, enemies);
-
-					while (student.has_queued_enemy())
+					if (cell == Cell::Wall || cell == Cell::Brick)
 					{
-						auto queued = student.pop_queued_enemy();
-						if (queued.first == 0)
+						if (y >= (SCREEN_HEIGHT / CELL_SIZE) - 2)
 						{
-							enemies.push_back(std::make_shared<Mark2>(queued.second.x, queued.second.y));
+							sprite_block2.setPosition(draw_x, draw_y);
+							window.draw(sprite_block2);
 						}
 						else
 						{
-							enemies.push_back(std::make_shared<Professor>(queued.second.x, queued.second.y));
+							sprite_block1.setPosition(draw_x, draw_y);
+							window.draw(sprite_block1);
 						}
 					}
-
-					for (auto& drink : energy_drinks)
+					else if (cell == Cell::Platform)
 					{
-						drink.update(view_x, map_manager, student);
+						sprite_bookblock.setPosition(draw_x, draw_y);
+						window.draw(sprite_bookblock);
 					}
-
-					for (auto& enemy : enemies)
+					else if (cell == Cell::MailBlock)
 					{
-						enemy->update(view_x, enemies, map_manager, student);
+						sprite_mailblock3.setPosition(draw_x, draw_y);
+						window.draw(sprite_mailblock3);
 					}
-
-					if (student.get_dead())
+					else if (cell == Cell::ActivatedMailBlock)
 					{
-						game_state = student.is_sugar_overdose() ? GameState::TooMuchSugar : GameState::GameOver;
-					}
-
-					time_accumulator -= 1.0f / 60.0f;
-				}
-			}
-
-			// Rendering (always displays, so you see a frozen game screen on pause)
-			unsigned int view_x = std::max(0, static_cast<int>(student.get_x()) - SCREEN_WIDTH / 2);
-			view_x = std::min(view_x, static_cast<unsigned int>(map_manager.get_map_width() * CELL_SIZE - SCREEN_WIDTH));
-
-			for (unsigned short x = view_x / CELL_SIZE; x < (view_x + SCREEN_WIDTH) / CELL_SIZE + 1; x++)
-			{
-				for (unsigned short y = 0; y < SCREEN_HEIGHT / CELL_SIZE; y++)
-				{
-					Cell cell = map_manager.get_cell(x, y);
-					if (cell != Cell::Empty)
-					{
-						sf::Sprite block_sprite;
-						sf::Texture block_texture;
-
-						if (cell == Cell::Wall)
-						{
-							block_texture.loadFromFile(y >= SCREEN_HEIGHT / CELL_SIZE - 2 ? "Resources/block2.png" : "Resources/block1.png");
-						}
-						else if (cell == Cell::Brick)
-						{
-							block_texture.loadFromFile("Resources/block1.png");
-						}
-						else if (cell == Cell::Platform)
-						{
-							block_texture.loadFromFile("Resources/bookblock.png");
-						}
-						else if (cell == Cell::MailBlock)
-						{
-							block_texture.loadFromFile("Resources/mailblock3.png");
-						}
-						else if (cell == Cell::ActivatedMailBlock)
-						{
-							block_texture.loadFromFile("Resources/mailblock0.png");
-						}
-
-						block_sprite.setTexture(block_texture);
-						block_sprite.setPosition(CELL_SIZE * x - view_x, CELL_SIZE * y);
-						window.draw(block_sprite);
+						sprite_mailblock0.setPosition(draw_x, draw_y);
+						window.draw(sprite_mailblock0);
 					}
 				}
 			}
@@ -284,30 +297,22 @@ int main()
 			for (auto& enemy : enemies) enemy->draw(view_x, window);
 			student.draw(window, view_x);
 
-			hud_text.setString("STUDENT   ECTS: " + std::to_string(ects_points) + "   TIME: " + std::to_string(game_timer));
-			hud_text.setPosition(10, 5);
+			// HUD statyczny na górze ekranu
+			std::string mode_label = hard_mode ? "HARD" : "NORMAL";
+			hud_text.setString("ECTS: " + std::to_string(ects_points) + "  SEM: " + std::to_string(current_level) + "  TIME: " + std::to_string(static_cast<int>(game_timer)) + "  [" + mode_label + "]");
+			hud_text.setPosition(5.0f, 5.0f);
 			window.draw(hud_text);
 
-			// If pause is active, overlay an information message
 			if (game_state == GameState::Pause)
 			{
-				menu_text.setString("DEAN'S OFFICE CLOSED\n       (PAUSE)\n\nPress P to resume...");
-				menu_text.setPosition(60, 90);
-				window.draw(menu_text);
+				window.draw(pause_text);
 			}
 		}
 		else if (game_state == GameState::GameOver)
 		{
-			menu_text.setString("SESSION FAILED!\n\nYou didn't get enough ECTS.\n\nPress ENTER to return to menu...");
-			menu_text.setPosition(30, 80);
-			window.draw(menu_text);
-		}
-		else if (game_state == GameState::TooMuchSugar)
-		{
-			window.clear(sf::Color(139, 0, 0));
-			menu_text.setString("TOO MUCH SUGAR!\n\nStudent's heart couldn't handle the third energy drink.\nCaffeine overdose!\n\nPress ENTER to try again...");
-			menu_text.setPosition(20, 60);
-			window.draw(menu_text);
+			game_view.setCenter(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+			window.setView(game_view);
+			window.draw(game_over_text);
 		}
 
 		window.display();
