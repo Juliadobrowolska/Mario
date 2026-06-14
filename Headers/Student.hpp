@@ -1,65 +1,74 @@
-#ifndef STUDENT_HPP
-#define STUDENT_HPP
+#pragma once
 
-#include <SFML/Graphics.hpp>
 #include <vector>
-#include <string>
-#include "MapManager.hpp"
+#include <memory>
+#include <SFML/Graphics.hpp>
+#include "Global.hpp"
+#include "Animation.hpp"
+
+// Forward declaration klas, by uniknąć zapętleń nagłówków
+class MapManager;
+class EnergyDrink;
+class Enemy;
 
 class Student
 {
 public:
-    Student();
+	// Struktura pomocnicza do spawnowania wrogów wyciągniętych z MailBlocka
+	struct QueuedEnemy
+	{
+		unsigned char type;
+		float x;
+		float y;
+	};
 
-    bool load_textures();
-    void update(const unsigned i_view_x, MapManager& i_map_manager);
-    void draw(sf::RenderWindow& i_window, unsigned int i_camera_x);
+	Student();
 
-    void set_position(const float i_x, const float i_y);
-    void set_vertical_speed(const float i_value);
-    void die(const bool i_instant_death);
-    void reset();
-    void draw_energy_drinks(const unsigned i_view_x, sf::RenderWindow& i_window);
+	// Podstawowe metody fizyki i aktualizacji stanu
+	void update(const unsigned short i_map_width, MapManager& i_map_manager, std::vector<EnergyDrink>& i_energy_drinks, std::vector<std::shared_ptr<Enemy>>& i_enemies);
+	void draw(sf::RenderWindow& i_window, const unsigned i_view_x);
+	
+	void die(const bool i_instant_death);
+	void reset_stats();
+	void drink_energy();
 
-    float get_x() const;
-    float get_vertical_speed() const;
-    sf::FloatRect get_hit_box() const;
+	// Gettery i Settery
+	float get_x() const;
+	float get_vertical_speed() const;
+	void set_vertical_speed(const float i_value);
+	bool get_dead() const;
+	bool is_sugar_overdose() const;
+	sf::FloatRect get_hit_box() const;
+
+	// Obsługa kolejki wrogów wyskakujących z MailBlocków
+	bool has_queued_enemy() const;
+	std::pair<unsigned char, sf::Vector2f> pop_queued_enemy();
 
 private:
-    bool is_dead;
-    bool crouching;
-    bool flipped;
-    bool on_ground;
-    bool can_jump;
+	// Flagi stanów bohatera
+	bool crouching;
+	bool dead;
+	bool big;
+	bool sugar_overdose;
+	bool flipped;
+	bool on_ground;
 
-    float enemy_bounce_speed;
-    float horizontal_speed;
-    float vertical_speed;
-    float x;
-    float y;
+	// Statystyki rozgrywki
+	unsigned char energy_drinks_drunk;
+	unsigned short enemy_spawn_timer;
 
-    unsigned char jump_timer;
-    unsigned char powerup_state;
+	// Pozycja i prędkość
+	float x;
+	float y;
+	float horizontal_speed;
+	float vertical_speed;
 
-    unsigned short death_timer;
-    unsigned short turbo_student_timer;
-    unsigned short immunity_timer;
+	// Obiekty SFML do rysowania i animacji
+	sf::Sprite sprite;
+	sf::Texture texture;
+	Animation big_walk_animation;
+	Animation small_walk_animation;
 
-    unsigned int walk_frame_counter;
-
-    sf::Clock animation_clock;
-    sf::Font game_over_font;
-    sf::Text game_over_text;
-
-    sf::Texture tex_idle;
-    sf::Texture tex_jump_up;
-    sf::Texture tex_jump_down;
-    sf::Texture tex_death;
-
-    std::vector<sf::Texture> tex_normal_walk;
-    std::vector<sf::Texture> tex_big_walk;
-
-    sf::Sprite sprite;
+	// Kontener na wrogów oczekujących na natychmiastowy spawn na mapie
+	std::vector<QueuedEnemy> enemy_spawn_queue;
 };
-
-#endif

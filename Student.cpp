@@ -1,96 +1,250 @@
 #include <array>
-#include <chrono>
 #include <cmath>
+#include <chrono>
 #include <algorithm>
+#include <vector>
+#include <memory>
 #include <SFML/Graphics.hpp>
 
 #include "Headers/Animation.hpp"
 #include "Headers/Global.hpp"
 #include "Headers/MapManager.hpp"
 #include "Headers/Student.hpp"
+#include "Headers/EnergyDrink.hpp"
 
+Student::Student() :
+	crouching(0),
+	dead(0),
+	big(0),
+	sugar_overdose(0),
+	flipped(0),
+	on_ground(0),
+	energy_drinks_drunk(0),
+	enemy_spawn_timer(0),
+	x(0),
+	y(0),
+	horizontal_speed(0),
+	vertical_speed(0),
+	// Inicjalizacja animacji bezpośrednio z folderu Resources
+	big_walk_animation({"Resources/bigrun1.png", "Resources/bigrun2.png"}, 4),
+	small_walk_animation({"Resources/run1.png", "Resources/run2.png", "Resources/run3.png"}, 4)
+{
+	// Domyślna tekstura na start gry
+	texture.loadFromFile("Resources/juststudent.png");
+	sprite.setTexture(texture);
+}
+
+// Pobieranie pozycji i stanu fizycznego
+float Student::get_x() const { return x; }
+float Student::get_vertical_speed() const { return vertical_speed; }
+bool Student::get_dead() const { return dead; }
+bool Student::is_sugar_overdose() const { return sugar_overdose; }
+
+void Student::set_vertical_speed(const float i_value)
+{
+	vertical_speed = i_value;
+}
+
+void Student::reset_stats()
+{
+	crouching = 0;
+	dead = 0;
+	big = 0;
+	sugar_overdose = 0;
+	flipped = 0;
+	on_ground = 0;
+	energy_drinks_drunk = 0;
+	horizontal_speed = 0;
+	vertical_speed = 0;
+	texture.loadFromFile("Resources/juststudent.png");
+	sprite.setTexture(texture);
+}
 
 void Student::die(const bool i_instant_death)
 {
-	if (true == i_instant_death)
+	if (0 == dead)
 	{
-		dead = true;
-		texture.loadFromFile("Resources/Images/student_death.png");
-	}
-	// *Jeśli student ma power-up (jest odporny), to zamiast umierać, traci go i dostaje chwilę nietykalności*
-	else if (0 == growth_timer && 0 == invincible_timer)
-	{
-		if (false == is_older_student)
+		if (1 == big && 0 == i_instant_death)
 		{
-			dead = true;
-			texture.loadFromFile("Resources/Images/student_death.png");
+			// Student traci stan Turbo zamiast natychmiast ginąć
+			big = 0;
+			energy_drinks_drunk = std::max(0, energy_drinks_drunk - 1);
 		}
 		else
 		{
-			*is_older_student = false;* // *Utrata power-upa*
-			invincible_timer = STUDENT_IMMUNITY_DURATION;
-			
-			// *Wzrost się nie zmienia, więc nie musimy manipulować pozycją Y postaci!*
-			if (true == crouching) crouching = false;
+			dead = 1;
+			vertical_speed = STUDENT_JUMP_SPEED;
+			texture.loadFromFile("Resources/gameover.png");
 		}
 	}
 }
 
-void Student::update(const unsigned i_view_x, MapManager& i_map_manager)
+// Liczenie wypitych puszek i aplikowanie logiki przedawkowania cukru
+void Student::drink_energy()
 {
-	if (0 != enemy_bounce_speed)
-	{
-		vertical_speed = enemy_bounce_speed;
-		enemy_bounce_speed = 0;
-	}
+	energy_drinks_drunk++;
+	big = 1; // Przejście w stan Turbo (duży student)
 
-	for (Index& index : indexes)
+	if (energy_drinks_drunk >= 3)
 	{
-		index.update(i_view_x, i_map_manager);
+		sugar_overdose = 1;
+		die(1); // Natychmiastowa śmierć z przedawkowania cukru
 	}
+}
 
-	if (false == dead)
+sf::FloatRect Student::get_hit_box() const
+{
+	// Hitbox dopasowany do wzrostu postaci (stan Turbo zwiększa go dwukrotnie)
+	if (1 == big)
 	{
-		bool moving = false;
+		return sf::FloatRect(x, y, CELL_SIZE, 2 * CELL_SIZE);
+	}
+	else
+	{
+		return sf::FloatRect(x, y + CELL_SIZE, CELL_SIZE, CELL_SIZE);
+	}
+}
+
+void Student::update(const unsigned short i_map_width, MapManager& i_map_manager, std::vector<EnergyDrink>& i_energy_drinks, std::vector<std::shared_ptr<Enemy>>& i_enemies)
+{
+	// Logika grawitacji
+	vertical_speed = std::min(GRAVITY + vertical_speed, MAX_VERTICAL_SPEED);
+
+	if (0 == dead)
+	{
+		// Zwiększenie prędkości poruszania się w zależności od liczby wypitych energetyków
+		float current_walk_speed = STUDENT_WALK_SPEED + (energy_drinks_drunk * 0.5f);
+		
+		crouching = 0;
+
+		// Sterowanie ruchami
+		if (1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+		{
+			flipped = 1;
+			horizontal_speed = std::max(horizontal_speed - 0.125f, -current_walk_speed);
+		}
+		else if (1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+		{
+			flipped = 0;
+			horizontal_speed = std::min(0.125f + horizontal_speed, current_walk_speed);
+		}
+		else
+		{
+			// Płynne hamowanie postaci
+			if (0 < horizontal_speed)
+			{
+				horizontal_speed = std::max(0.0f, horizontal_speed - 0.125f);
+			}
+			else if (0 > horizontal_speed)
+			{
+				horizontal_speed = std::min(0.0f, 0.125f + horizontal_speed);
+			}
+		}
+
+		if (1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+		{
+			if (1 == big)
+			{
+				crouching = 1;
+				horizontal_speed = 0;
+			}
+		}
+
+		if (1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || 1 == sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
+		{
+			if (1 == on_ground && 0 == crouching)
+			{
+				on_ground = 0;
+				vertical_speed = STUDENT_JUMP_SPEED - (energy_drinks_drunk * 0.25f); // Wyższy skok po cukrze
+			}
+		}
+
+		// Obsługa kolizji pionowych (góra/dół)
 		std::vector<unsigned char> collision;
-		std::vector<sf::Vector2i> cells;
 		sf::FloatRect hit_box = get_hit_box();
+		hit_box.top += vertical_speed;
 
-		on_ground = false;
-
-		// *USTALANIE PRĘDKOŚCI: Jeśli student posiada indeks, jego maksymalna prędkość rośnie dwukrotnie*
-		*float current_max_speed = is_older_student ? (STUDENT_WALK_SPEED * 2.f) : STUDENT_WALK_SPEED;*
-		*float current_acceleration = is_older_student ? (STUDENT_ACCELERATION * 2.f) : STUDENT_ACCELERATION;*
-
-		if (false == crouching)
-		{
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-			{
-				moving = true;
-				*horizontal_speed = std::max(horizontal_speed - current_acceleration, -current_max_speed);*
-			}
-			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-			{
-				moving = true;
-				*horizontal_speed = std::min(current_acceleration + horizontal_speed, current_max_speed);*
-			}
-		}
-
-		if (false == moving)
-		{
-			if (0 < horizontal_speed)       *horizontal_speed = std::max<float>(0, horizontal_speed - current_acceleration);*
-			else if (0 > horizontal_speed)  *horizontal_speed = std::min<float>(0, current_acceleration + horizontal_speed);*
-		}
-
-		// Kolizje poziome
-		hit_box.left += horizontal_speed;
 		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
 
 		if (0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
 		{
-			moving = false;
-			if (0 < horizontal_speed)       x = CELL_SIZE * (ceil((horizontal_speed + x) / CELL_SIZE) - 1);
-			else if (0 > horizontal_speed)  x = CELL_SIZE * (1 + floor((horizontal_speed + x) / CELL_SIZE));
+			if (0 > vertical_speed)
+			{
+				// Uderzenie głową w blok od spodu
+				unsigned short check_x = floor((hit_box.left + 0.5f * hit_box.width) / CELL_SIZE);
+				unsigned short check_y = floor((hit_box.top) / CELL_SIZE);
+
+				Cell hit_cell = i_map_manager.get_cell(check_x, check_y);
+
+				if (Cell::Brick == hit_cell)
+				{
+					if (1 == big)
+					{
+						// Stan Turbo niszczy czerwony wiszący kloc
+						i_map_manager.set_cell(check_x, check_y, Cell::Empty);
+					}
+				}
+				else if (Cell::MailBlock == hit_cell)
+				{
+					// Uderzenie w skrzynkę MailBlock - aktywacja procentowego łupu
+					i_map_manager.set_cell(check_x, check_y, Cell::ActivatedMailBlock);
+					
+					unsigned char loot_chance = rand() % 100;
+
+					if (loot_chance < 40)
+					{
+						// 40% szans na wypadnięcie puszki energetyka
+						i_energy_drinks.push_back(EnergyDrink(CELL_SIZE * check_x, CELL_SIZE * check_y));
+					}
+					else if (loot_chance < 50)
+					{
+						// 10% szans na dopisanie punktu ECTS (obsługiwane w main.cpp przez zliczanie zdarzeń)
+					}
+					else if (loot_chance < 80)
+					{
+						// 30% szans na natychmiastowy spawn wroga prosto pod sufit!
+						// 0 = Ocena 2.0, 1 = Profesor
+						unsigned char enemy_type = (rand() % 2 == 0) ? 0 : 1;
+						// Spawnowany wróg pojawia się tuż nad skrzynką
+						enemy_spawn_queue.push_back({enemy_type, static_cast<float>(CELL_SIZE * check_x), static_cast<float>(CELL_SIZE * (check_y - 1))});
+					}
+					// Pozostałe 20% to pusta skrzynka (tylko zmiana wyglądu)
+				}
+
+				y = CELL_SIZE * (1 + floor((vertical_speed + y) / CELL_SIZE));
+			}
+			else
+			{
+				// Bezpieczne wylądowanie na podłożu
+				on_ground = 1;
+				y = CELL_SIZE * (ceil((vertical_speed + y) / CELL_SIZE) - 1);
+			}
+
+			vertical_speed = 0;
+		}
+		else
+		{
+			on_ground = 0;
+			y += vertical_speed;
+		}
+
+		// Obsługa kolizji poziomych (lewo/prawo)
+		hit_box = get_hit_box();
+		hit_box.left += horizontal_speed;
+
+		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
+
+		if (0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
+		{
+			if (0 < horizontal_speed)
+			{
+				x = CELL_SIZE * (ceil((horizontal_speed + x) / CELL_SIZE) - 1);
+			}
+			else
+			{
+				x = CELL_SIZE * (1 + floor((horizontal_speed + x) / CELL_SIZE));
+			}
+
 			horizontal_speed = 0;
 		}
 		else
@@ -98,143 +252,108 @@ void Student::update(const unsigned i_view_x, MapManager& i_map_manager)
 			x += horizontal_speed;
 		}
 
-		// Skoki Studenta
-		hit_box = get_hit_box();
-		hit_box.top++;
-		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
-		
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+		// Blokowanie gracza przed wyjściem poza lewą krawędź ekranu mapy
+		x = std::max(0.0f, x);
+		x = std::min(static_cast<float>(CELL_SIZE * i_map_width - CELL_SIZE), x);
+
+		// Zarządzanie klatkami animacji ruchu
+		if (0 != horizontal_speed)
 		{
-			if (0 == vertical_speed && 0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
+			if (1 == big)
 			{
-				vertical_speed = STUDENT_JUMP_SPEED;
-				jump_timer = STUDENT_JUMP_TIMER;
+				big_walk_animation.update();
 			}
-			else if (0 < jump_timer)
+			else
 			{
-				vertical_speed = STUDENT_JUMP_SPEED;
-				jump_timer--;
+				small_walk_animation.update();
 			}
 		}
-		else
-		{
-			vertical_speed = std::min(GRAVITY + vertical_speed, MAX_VERTICAL_SPEED);
-			jump_timer = 0;
-		}
-
-		// Kolizje pionowe
-		hit_box = get_hit_box();
-		hit_box.top += vertical_speed;
-		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
-		
-		if (0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
-		{
-			if (0 > vertical_speed)
-			{
-				// *Niszczenie klocków: teraz niszczymy je, jeśli mamy power-up (is_older_student), wzrost nie ma znaczenia*
-				*if (false == crouching && true == is_older_student)*
-				{
-					i_map_manager.map_collision({Cell::Brick}, cells, hit_box);
-					for (const sf::Vector2i& cell : cells)
-					{
-						i_map_manager.set_map_cell(cell.x, cell.y, Cell::Empty);
-						i_map_manager.add_brick_particles(CELL_SIZE * cell.x, CELL_SIZE * cell.y);
-					}
-				}
-
-				i_map_manager.map_collision({Cell::MailBlock}, cells, hit_box);
-				for (const sf::Vector2i& cell : cells)
-				{
-					i_map_manager.set_map_cell(cell.x, cell.y, Cell::ActivatedMailBlock);
-					
-					if (rand() % 2 == 0)
-					{
-						indexes.push_back(Index(CELL_SIZE * cell.x, CELL_SIZE * cell.y));
-					}
-					else
-					{
-						i_map_manager.add_mail_block_ects(CELL_SIZE * cell.x, CELL_SIZE * cell.y);
-					}
-				}
-				y = CELL_SIZE * (1 + floor((vertical_speed + y) / CELL_SIZE));
-			}
-			else if (0 < vertical_speed)
-			{
-				y = CELL_SIZE * (ceil((vertical_speed + y) / CELL_SIZE) - 1);
-			}
-			jump_timer = 0;
-			vertical_speed = 0;
-		}
-		else
-		{
-			y += vertical_speed;
-		}
-
-		if (0 < horizontal_speed)       flipped = false;
-		else if (0 > horizontal_speed)  flipped = true;
-
-		// Sprawdzenie podłoża
-		hit_box = get_hit_box();
-		hit_box.top++;
-		collision = i_map_manager.map_collision({Cell::ActivatedMailBlock, Cell::Brick, Cell::Platform, Cell::MailBlock, Cell::Wall}, hit_box);
-		if (0 == std::all_of(collision.begin(), collision.end(), [](const unsigned char i_value) { return 0 == i_value; }))
-		{
-			on_ground = true;
-		}
-
-		// Kolizja z Indeksem (Aktywacja turbo-prędkości)
-		for (Index& index : indexes)
-		{
-			if (get_hit_box().intersects(index.get_hit_box()))
-			{
-				index.set_dead(true);
-				if (false == is_older_student)
-				{
-					is_older_student = true;
-					*growth_timer = STUDENT_GROWTH_DURATION;* // *Uruchamia efekt "błyskania" przy aktywacji*
-				}
-			}
-		}
-
-		// Zbieranie ECTS
-		hit_box = get_hit_box();
-		i_map_manager.map_collision({Cell::Ects}, cells, hit_box);
-		for (const sf::Vector2i& cell : cells)
-		{
-			i_map_manager.set_map_cell(cell.x, cell.y, Cell::Empty);
-		}
-
-		if (0 < invincible_timer) invincible_timer--;
-		if (0 < growth_timer) growth_timer--;
-
-		if (y >= SCREEN_HEIGHT - get_hit_box().height) die(true);
-
-		// *Animacja dopasowuje swoją szybkość do faktycznej prędkości biegu Studenta!*
-		walk_animation.set_animation_speed(STUDENT_WALK_ANIMATION_SPEED * STUDENT_WALK_SPEED / abs(horizontal_speed));
-		walk_animation.update();
 	}
 	else
 	{
-		if (0 == death_timer)
-		{
-			vertical_speed = std::min(GRAVITY + vertical_speed, MAX_VERTICAL_SPEED);
-			y += vertical_speed;
-		}
-		else if (1 == death_timer)
-		{
-			vertical_speed = STUDENT_JUMP_SPEED;
-		}
-		death_timer = std::max(0, death_timer - 1);
+		// Ruch w powietrzu po śmierci postaci (wypadanie z planszy)
+		y += vertical_speed;
 	}
 
-	indexes.erase(remove_if(indexes.begin(), indexes.end(), [](const Index& i_index)
+	// Śmierć po wpadnięciu do dziury (spadek poniżej mapy)
+	if (SCREEN_HEIGHT <= y)
 	{
-		return true == i_index.get_dead();
-	}), indexes.end());
+		die(1);
+	}
 }
 
-sf::FloatRect Student::get_hit_box() const
+void Student::draw(sf::RenderWindow& i_window, const unsigned i_view_x)
 {
-	// *Hitbox zawsze ma stały rozmiar 1 kafelka, bo Student nie rośnie wzwyż!*
-	*return sf::FloatRect(x, y, CELL_SIZE, CELL_SIZE);*
+	// Wybór odpowiedniej tekstury w zależności od stanu Studenta
+	if (0 == dead)
+	{
+		if (0 == on_ground)
+		{
+			// Tekstura skoku
+			if (1 == big)
+			{
+				texture.loadFromFile(crouching ? "Resources/bigstudentjump3.png" : "Resources/bigstudentjump1.png");
+			}
+			else
+			{
+				texture.loadFromFile("Resources/jump1.png");
+			}
+			sprite.setTexture(texture);
+		}
+		else if (0 == horizontal_speed)
+		{
+			// Tekstura stania w miejscu
+			if (1 == big)
+			{
+				texture.loadFromFile(crouching ? "Resources/bigstudentjump3.png" : "Resources/juststudent.png"); // Zamiast dedykowanego big_idle
+			}
+			else
+			{
+				texture.loadFromFile("Resources/juststudent.png");
+			}
+			sprite.setTexture(texture);
+		}
+	}
+
+	// Rysowanie animacji lub statycznego sprite'a
+	if (0 == dead && 0 != horizontal_speed && 1 == on_ground)
+	{
+		if (1 == big)
+		{
+			big_walk_animation.set_flipped(flipped);
+			big_walk_animation.set_position(round(x) - i_view_x, round(y));
+			big_walk_animation.draw(i_window);
+		}
+		else
+		{
+			small_walk_animation.set_flipped(flipped);
+			small_walk_animation.set_position(round(x) - i_view_x, round(y));
+			small_walk_animation.draw(i_window);
+		}
+	}
+	else
+	{
+		// Odwrócenie sprite'a w zależności od kierunku patrzenia
+		if (1 == flipped)
+		{
+			sprite.setScale(-1, 1);
+			sprite.setPosition(round(x) - i_view_x + CELL_SIZE, round(y));
+		}
+		else
+		{
+			sprite.setScale(1, 1);
+			sprite.setPosition(round(x) - i_view_x, round(y));
+		}
+
+		i_window.draw(sprite);
+	}
+}
+
+// Obsługa kolejki wrogów do spawnowania wywołanych przez MailBlock
+bool Student::has_queued_enemy() const { return !enemy_spawn_queue.empty(); }
+std::pair<unsigned char, sf::Vector2f> Student::pop_queued_enemy()
+{
+	auto front = enemy_spawn_queue.front();
+	enemy_spawn_queue.erase(enemy_spawn_queue.begin());
+	return {front.type, sf::Vector2f(front.x, front.y)};
 }
