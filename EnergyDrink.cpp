@@ -89,11 +89,6 @@ sf::FloatRect EnergyDrink::get_hitbox() const
 	return sf::FloatRect(sf::Vector2f{x, y}, sf::Vector2f{static_cast<float>(CELL_SIZE), static_cast<float>(CELL_SIZE)});
 }
 
-bool EnergyDrink::get_collected() const
-{
-	return collected;
-}
-
 void EnergyDrink::draw(sf::RenderWindow& i_window, unsigned int i_view_x)
 {
 	if (collected) return;

@@ -29,10 +29,8 @@ int main()
 
 	// Tworzymy widok SFML o logicznej rozdzielczości retro (320x240)
 	// Dzięki temu SFML sam idealnie i ostro rozciągnie grafikę na całe okno!
-	sf::View game_view(sf::FloatRect(sf::Vector2f{0.0f, 0.0f}, sf::Vector2f{static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT)}));
-	window.setView(game_view);
-
-	sf::Font font;
+sf::View game_view(sf::FloatRect(sf::Vector2f(0.0f, 0.0f), sf::Vector2f(static_cast<float>(SCREEN_WIDTH), static_cast<float>(SCREEN_HEIGHT))));
+sf::Font font;
 	if (!font.openFromFile("Resources/arial.ttf"))
 	{
 		return -1;

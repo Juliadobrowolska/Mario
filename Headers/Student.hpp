@@ -38,8 +38,9 @@ private:
     float animation_timer;
     int current_frame;
 
-    sf::Texture texture_small, texture_big;
-    sf::Sprite sprite;
+    sf::Texture tex_small, tex_big, tex_gameover;
+    sf::Texture tex_run[3], tex_jump[3], tex_left[2];
     
+    sf::Sprite sprite;
     std::queue<std::pair<unsigned char, sf::Vector2f>> enemy_queue;
 };

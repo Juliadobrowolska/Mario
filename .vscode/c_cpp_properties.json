@@ -5,10 +5,10 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/Headers",
-                "${env:SFML_HOME}/include"
+                "C:\\msys64\\ucrt64\\include"
             ],
             "defines": [],
-            "compilerPath": "C:/MinGW/bin/g++.exe",
+            "compilerPath": "C:\\msys64\\ucrt64\\bin\\g++.exe",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-gcc-x64"
